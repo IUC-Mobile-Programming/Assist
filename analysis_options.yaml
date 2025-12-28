@@ -1,0 +1,17 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - '**/*.g.dart'
+    - '**/*.freezed.dart'
+    - '**/*.gr.dart'
+
+linter:
+  rules:
+    avoid_print: false
+    prefer_const_constructors: true
+    prefer_final_fields: true
+    prefer_final_locals: true
+    prefer_const_declarations: true
+    avoid_redundant_argument_values: true
+    avoid_relative_lib_imports: true
