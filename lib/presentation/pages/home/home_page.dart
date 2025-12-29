@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:assist_ai/presentation/viewmodels/home_viewmodel.dart';
-import 'package:assist_ai/presentation/widgets/task_item.dart';
-import 'package:assist_ai/presentation/widgets/recommendation_item.dart';
-import 'package:assist_ai/core/app_theme.dart';
+import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
+import 'package:Assist/presentation/widgets/task_item.dart';
+import 'package:Assist/presentation/widgets/recommendation_item.dart';
+import 'package:Assist/core/app_theme.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

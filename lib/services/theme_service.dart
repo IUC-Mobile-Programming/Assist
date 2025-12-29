@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:assist_ai/core/app_theme.dart';
+import 'package:Assist/core/app_theme.dart';
 
 class ThemeService extends ChangeNotifier {
   bool _isDarkMode = false;

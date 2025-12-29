@@ -1,5 +1,5 @@
-import 'package:assist_ai/data/models/task.dart';
-import 'package:assist_ai/data/repositories/task_repository.dart';
+import 'package:Assist/data/models/task.dart';
+import 'package:Assist/data/repositories/task_repository.dart';
 
 class GetTasksUseCase {
   final TaskRepository repository;

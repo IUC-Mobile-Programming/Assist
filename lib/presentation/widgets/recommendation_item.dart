@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:assist_ai/data/models/ai_recommendation.dart';
+import 'package:Assist/data/models/ai_recommendation.dart';
 
 class RecommendationItem extends StatelessWidget {
   final AIRecommendation recommendation;

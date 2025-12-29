@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:assist_ai/data/models/task.dart';
-import 'package:assist_ai/data/models/ai_recommendation.dart';
-import 'package:assist_ai/domain/use_cases/task_use_cases.dart';
-import 'package:assist_ai/data/repositories/task_repository.dart';
+import 'package:Assist/data/models/task.dart';
+import 'package:Assist/data/models/ai_recommendation.dart';
+import 'package:Assist/domain/use_cases/task_use_cases.dart';
+import 'package:Assist/data/repositories/task_repository.dart';
 
 class HomeViewModel extends ChangeNotifier {
   final GetTasksUseCase? _getTasksUseCase;

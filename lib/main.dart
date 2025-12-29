@@ -1,5 +1,5 @@
-import 'package:assist_ai/services/localization_service.dart';
-import 'package:assist_ai/services/theme_service.dart';
+import 'package:Assist/services/localization_service.dart';
+import 'package:Assist/services/theme_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'app.dart';

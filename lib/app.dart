@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:assist_ai/presentation/pages/home/home_page.dart';
-import 'package:assist_ai/presentation/pages/calendar/calendar_page.dart';
-import 'package:assist_ai/presentation/pages/settings/settings_page.dart';
-import 'package:assist_ai/services/theme_service.dart';
-import 'package:assist_ai/services/localization_service.dart';
+import 'package:Assist/presentation/pages/home/home_page.dart';
+import 'package:Assist/presentation/pages/calendar/calendar_page.dart';
+import 'package:Assist/presentation/pages/settings/settings_page.dart';
+import 'package:Assist/services/theme_service.dart';
+import 'package:Assist/services/localization_service.dart';
 
 class App extends StatefulWidget {
   const App({super.key});

@@ -1,5 +1,5 @@
-import 'package:assist_ai/data/models/calendar_event.dart';
-import 'package:assist_ai/data/repositories/calendar_repository.dart';
+import 'package:Assist/data/models/calendar_event.dart';
+import 'package:Assist/data/repositories/calendar_repository.dart';
 
 class GetEventsUseCase {
   final CalendarRepository repository;

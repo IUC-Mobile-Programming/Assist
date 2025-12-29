@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:assist_ai/data/models/calendar_event.dart';
-import 'package:assist_ai/domain/use_cases/calendar_use_cases.dart';
+import 'package:Assist/data/models/calendar_event.dart';
+import 'package:Assist/domain/use_cases/calendar_use_cases.dart';
 
 enum CalendarViewMode { month, week }
 

@@ -1,12 +1,12 @@
-import 'package:assist_ai/data/repositories/task_repository.dart';
-import 'package:assist_ai/data/repositories/calendar_repository.dart';
-import 'package:assist_ai/domain/use_cases/task_use_cases.dart';
-import 'package:assist_ai/domain/use_cases/calendar_use_cases.dart';
-import 'package:assist_ai/services/localization_service.dart';
-import 'package:assist_ai/services/theme_service.dart';
-import 'package:assist_ai/presentation/viewmodels/home_viewmodel.dart';
-import 'package:assist_ai/presentation/viewmodels/calendar_viewmodel.dart';
-import 'package:assist_ai/presentation/viewmodels/settings_viewmodel.dart';
+import 'package:Assist/data/repositories/task_repository.dart';
+import 'package:Assist/data/repositories/calendar_repository.dart';
+import 'package:Assist/domain/use_cases/task_use_cases.dart';
+import 'package:Assist/domain/use_cases/calendar_use_cases.dart';
+import 'package:Assist/services/localization_service.dart';
+import 'package:Assist/services/theme_service.dart';
+import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
+import 'package:Assist/presentation/viewmodels/calendar_viewmodel.dart';
+import 'package:Assist/presentation/viewmodels/settings_viewmodel.dart';
 
 class ServiceLocator {
   static final ServiceLocator _instance = ServiceLocator._internal();

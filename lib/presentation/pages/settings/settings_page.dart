@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:assist_ai/presentation/viewmodels/settings_viewmodel.dart';
-import 'package:assist_ai/presentation/pages/settings/help_about_page.dart';
-import 'package:assist_ai/services/localization_service.dart';
-import 'package:assist_ai/core/app_theme.dart';
+import 'package:Assist/presentation/viewmodels/settings_viewmodel.dart';
+import 'package:Assist/presentation/pages/settings/help_about_page.dart';
+import 'package:Assist/services/localization_service.dart';
+import 'package:Assist/core/app_theme.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});

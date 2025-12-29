@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:assist_ai/services/theme_service.dart';
-import 'package:assist_ai/services/localization_service.dart';
+import 'package:Assist/services/theme_service.dart';
+import 'package:Assist/services/localization_service.dart';
 
 enum SettingsSection { main, notifications, privacy, language, helpAbout }
 

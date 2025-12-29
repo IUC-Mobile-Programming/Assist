@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:assist_ai/data/models/task.dart';
-import 'package:assist_ai/services/localization_service.dart';
+import 'package:Assist/data/models/task.dart';
+import 'package:Assist/services/localization_service.dart';
 
 class TaskItem extends StatelessWidget {
   final Task task;

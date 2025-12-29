@@ -1,4 +1,4 @@
-import 'package:assist_ai/data/models/task.dart';
+import 'package:Assist/data/models/task.dart';
 
 abstract class TaskRepository {
   Future<List<Task>> getTasks();

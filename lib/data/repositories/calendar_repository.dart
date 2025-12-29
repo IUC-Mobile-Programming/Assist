@@ -1,4 +1,4 @@
-import 'package:assist_ai/data/models/calendar_event.dart';
+import 'package:Assist/data/models/calendar_event.dart';
 import 'package:flutter/material.dart';
 import '../../core/extensions.dart';
 

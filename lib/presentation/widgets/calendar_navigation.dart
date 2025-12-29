@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:assist_ai/presentation/viewmodels/calendar_viewmodel.dart';
-import 'package:assist_ai/services/localization_service.dart';
+import 'package:Assist/presentation/viewmodels/calendar_viewmodel.dart';
+import 'package:Assist/services/localization_service.dart';
 
 class CalendarNavigation extends StatelessWidget {
   final CalendarViewModel viewModel;
