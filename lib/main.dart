@@ -15,13 +15,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locator = ServiceLocator();
+
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ServiceLocator().themeService),
-        ChangeNotifierProvider(create: (_) => ServiceLocator().localizationService),
-        ChangeNotifierProvider(create: (_) => ServiceLocator().homeViewModel),
-        ChangeNotifierProvider(create: (_) => ServiceLocator().calendarViewModel),
-        ChangeNotifierProvider(create: (_) => ServiceLocator().settingsViewModel),
+        ChangeNotifierProvider.value(value: locator.themeService),
+        ChangeNotifierProvider.value(value: locator.localizationService),
+        ChangeNotifierProvider.value(value: locator.homeViewModel),
+        ChangeNotifierProvider.value(value: locator.calendarViewModel),
+        ChangeNotifierProvider.value(value: locator.settingsViewModel),
       ],
       child: Consumer2<ThemeService, LocalizationService>(
         builder: (context, themeService, localizationService, _) {

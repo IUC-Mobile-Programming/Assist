@@ -35,7 +35,7 @@ class CalendarNavigation extends StatelessWidget {
               const SizedBox(height: 4),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.primaryColor.withOpacity(0.1),
+                  backgroundColor: theme.primaryColor.withAlpha((0.1 * 255).round()),
                   foregroundColor: theme.primaryColor,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 ),
