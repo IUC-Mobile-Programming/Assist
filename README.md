@@ -1,283 +1,169 @@
-# ASSIST AI — Proje README
+# ASSIST AI 🤖
 
-Bu README, proje yapısını, mimariyi ve eksik parçaların (AI önerileri, push bildirimleri ve veritabanı yönetimi) nerede uygulanacağını açıklar.
+**Assist AI**, görev yönetimi ve takvim etkinliklerini yapay zeka destekli önerilerle birleştiren, MVVM mimarisi ve Clean Architecture prensipleriyle geliştirilmiş bir Flutter uygulamasıdır.
 
-Uygulayıcılar için kontrol listesi (yüksek seviye)
-\- [ ] AI için backend stratejisi seç (bulut) ve `lib/services/ai_service.dart` + API anahtarı yönetimi ekle
-\- [ ] Kalıcı `TaskRepository` & `CalendarRepository` uygula (sqflite/hive/isar/Firebase)
-\- [ ] `NotificationService` uygula ve bildirimleri zamanla (flutter_local_notifications ve/veya firebase_messaging kullan)
-\- [ ] AI önerilerini `HomeViewModel` içine bağla veya `AIRecommendationsViewModel` ekle (domain use-case'leri kullan)
-\- [ ] Use-case ve repository davranışı için testler ekle
+Bu README, proje yapısını, mimari kararları ve (şu an mock olan) veri katmanının production seviyesine nasıl taşınacağını açıklar.
 
----
+## 📋 Geliştirici Kontrol Listesi (Yüksek Seviye)
 
-Proje Genel Bakış
+Projeyi devralan geliştiriciler için öncelikli yapılması gerekenler:
 
-\- Tip: Flutter uygulaması  
-\- Dart SDK: >=3.0.0 <4.0.0 (bakınız `pubspec.yaml`)  
-\- State yönetimi: Provider  
-\- Mimari: MVVM + Clean-benzeri katmanlı yapı (data, domain, presentation)
-
-Uygulama UI'si kısmen uygulanmış; data/repository katmanı şu an bellek içi mock implemantasyonlar kullanıyor. Bunları production seviyesinde uygulanmış halleriyle değiştirip AI ve bildirim servislerini eklemeniz gerekecek.
+- [ ] **AI Backend:** `lib/services/ai_service.dart` oluştur, backend stratejisini seç (OpenAI/Cloud) ve API anahtarı yönetimini ekle.
+- [ ] **Veritabanı:** `TaskRepository` & `CalendarRepository` için kalıcı depolama (SQLite/Hive) uygula.
+- [ ] **Bildirimler:** `NotificationService` ile yerel ve uzak (push) bildirimleri entegre et.
+- [ ] **AI Entegrasyonu:** AI önerilerini `HomeViewModel` veya `AIRecommendationsViewModel` içerisine bağla.
+- [ ] **Test:** Kritik use-case ve repository davranışları için birim testleri yaz.
 
 ---
 
-Depo / Klasör Haritası (önemli dosyalar)
+## 🛠 Proje Genel Bakış
 
-\- `lib/`  
-\- `main.dart` — uygulama giriş noktası ve global `Provider` kayıtları (`ServiceLocator` kullanılır)  
-\- `injection_container.dart` — mevcut DI/service locator (singleton'lar burada oluşturulur)  
-\- `app.dart` — root scaffold ve temel navigasyon  
-\- `services/`  
-\- `theme_service.dart` — tema için ChangeNotifier  
-\- `localization_service.dart` — stringler ve locale haritası  
-\- (ekle) `ai_service.dart` — AI backend ile haberleşen servis  
-\- (ekle) `notification_service.dart` — bildirimi zamanlayan/gönderen servis  
-\- (ekle) `db_service.dart` veya `persistence_service.dart` — veritabanı sarmalayıcısı  
-\- `data/`  
-\- `models/` — `task.dart`, `calendar_event.dart`, `ai_recommendation.dart`  
-\- `repositories/` — `task_repository.dart`, `calendar_repository.dart` (şu an bellek içi impl)  
-\- Bu `*RepositoryImpl` sınıflarını DB tabanlı implementasyonlarla değiştirin  
-\- `domain/`  
-\- `use_cases/` — iş mantığını yöneten use-case'ler  
-\- AI önerileri veya bildirim planlama için yeni use-case'ler ekleyin  
-\- `presentation/`  
-\- `viewmodels/` — `HomeViewModel`, `CalendarViewModel`, `SettingsViewModel`  
-\- Uygun viewmodel'lere AI ve bildirim tetiklerini bağlayın  
-\- `pages/`, `widgets/` — UI bileşenleri (UI sizin sorumluluğunuz)
+| Özellik | Detay |
+| :--- | :--- |
+| **Tip** | Flutter Uygulaması |
+| **SDK** | Dart >=3.0.0 <4.0.0 |
+| **State Yönetimi** | Provider |
+| **Mimari** | MVVM + Clean Architecture (Data, Domain, Presentation) |
+| **Durum** | UI kısmen hazır. Data katmanı şu an **In-Memory Mock** kullanıyor. |
 
 ---
 
-Yüksek seviye mimari ve özelliklerin nerede uygulanacağı
+## 📂 Klasör Yapısı ve Önemli Dosyalar
 
-Uygulama katmanlı bir yaklaşımı takip eder:
+Proje, sorumlulukların ayrıldığı katmanlı bir yapıya sahiptir:
 
-\- Presentation (UI + ViewModels): `lib/presentation/`  
-Sorumluluklar: UI render, kullanıcı etkileşimleri, intent'leri ViewModel'lere iletme  
-Uygulama: UI öğelerini ViewModel metodlarına bağlayın. UI doğrudan repository veya servisleri çağırmamalıdır.
+```text
+lib/
+├── main.dart                  # Uygulama giriş noktası, Provider kayıtları
+├── injection_container.dart   # Dependency Injection (Service Locator) kurulumu
+├── app.dart                   # Root Scaffold ve Navigasyon
+├── services/                  # Harici servisler ve sarmalayıcılar
+│   ├── theme_service.dart
+│   ├── localization_service.dart
+│   ├── ai_service.dart        # [EKLENECEK] AI API haberleşmesi
+│   ├── notification_service.dart # [EKLENECEK] Bildirim yönetimi
+│   └── db_service.dart        # [EKLENECEK] Veritabanı sarmalayıcısı
+├── data/                      # Veri katmanı (Repositories + Models)
+│   ├── models/                # task.dart, calendar_event.dart, ai_recommendation.dart
+│   └── repositories/          # Repository Implementasyonları (Şu an Mock)
+├── domain/                    # İş Mantığı (Framework bağımsız)
+│   └── use_cases/             # GetTasks, AddTask, ScheduleNotification vb.
+└── presentation/              # UI Katmanı
+    ├── viewmodels/            # HomeViewModel, CalendarViewModel
+    ├── pages/                 # Ekranlar
+    └── widgets/               # Yeniden kullanılabilir bileşenler
 
-\- Domain (Use Cases): `lib/domain/use_cases/`  
-Sorumluluklar: İş mantığı (adım dizileri) framework bağımsız olarak uygulanır  
-Uygulama: `GetTasksUseCase`, `AddTaskUseCase` gibi use-case'ler ve yeni `GetAIRecommendationsUseCase`, `ScheduleNotificationUseCase`.
-
-\- Data (Repositories + Models): `lib/data/`  
-Sorumluluklar: Veri saklama ve alma (DB, uzak API). Repository arayüzlerini DB/remote ile implemente edin.  
-Uygulama: `TaskRepositoryImpl`, `CalendarRepositoryImpl` yerine DB destekli implementasyonlar.
-
-\- Services: `lib/services/`  
-Sorumluluklar: Ağ, AI API client'ları, bildirimler, DB wrapper, auth gibi çapraz-kesit endişeler.  
-Uygulama: `AIService`, `NotificationService`, `DBService` oluşturun.
-
-\- Dependency Injection: `lib/injection_container.dart`  
-Sorumluluklar: Singleton'ları oluşturma ve sunma (repository, servis, viewmodel).  
-Uygulama: DB ve bildirim plugin'lerini burada başlatın (async olabilir — bootstrap `setupDependencies()` içinde `runApp` öncesinde çağrılmalı).
-
----
-
-Detaylı uygulama rehberi (AI, Bildirimler, DB)
-
-1) AI Önerileri
-
-Amaç: Varolan `AIRecommendation` modelini kullanarak AI tabanlı öneriler sunmak.
-
-\- Servis: `lib/services/ai_service.dart`  
-\- Sorumluluk: Prompt göndermek ve yapılandırılmış yanıt almak.  
-\- Metod örneği: `Future<List<AIRecommendation>> getRecommendationsForUser({List<Task> tasks, List<CalendarEvent> events, Locale locale})`  
-\- Uygulama seçenekleri:  
-\- Bulut (önerilen): OpenAI veya kendi inference sunucunuz. `http`/`dio` veya `openai` paketlerini kullanın. API anahtarlarını güvenli saklayın (`flutter_dotenv` vb.).  
-\- Cihaz içi: TensorFlow Lite modeli entegre etmek mümkün; genelde daha karmaşık.
-
-\- Domain: `lib/domain/use_cases/get_ai_recommendations_use_case.dart`  
-\- `AIService.getRecommendationsForUser(...)` çağırır ve `AIRecommendation` objelerine map eder.
-
-\- Data/Repository: Önerileri cache'lemek isterseniz opsiyonel `AIRepository` ekleyin.
-
-\- Presentation: `HomeViewModel` use-case'i çağırmalı (`getAIRecommendationsUseCase`) ve `HomePage`'e `List<AIRecommendation>` sağlayacak şekilde expose etmelidir. Tetikleme: uygulama açılışında, görev değişikliğinde veya kullanıcı isteğiyle.
-
-Notlar ve dikkat edilmesi gerekenler: API maliyetleri, rate limit, caching, gizlilik (duyarlı veriyi göndermeyin), yapılandırılmış JSON tercih edin.
-
-2) Push Bildirimleri (ve Yerel Bildirimler)
-
-Amaç: Kullanıcılara yaklaşan görev/etkinlikler hakkında bildirim göndermek.
-
-Modlar:  
-\- Uzaktan push (Firebase Cloud Messaging) — sunucu kaynaklı uyarılar için  
-\- Yerel zamanlanan bildirimler (`flutter_local_notifications`) — cihaz üzerinde planlanan alarmlar için
-
-Önerilen yapı: Her iki yöntemi birlikte kullanın: Yerel bildirimler cihaz-temelli hatırlatmalar için; FCM uzak ve çapraz-cihaz senkronizasyon için.
-
-Eklenmesi gereken dosyalar:  
-\- `lib/services/notification_service.dart` — `firebase_messaging` ve `flutter_local_notifications` için sarmalayıcı. Metod örnekleri:  
-\- `Future<void> init()`  
-\- `Future<void> scheduleNotification({id, title, body, DateTime when})`  
-\- `Future<void> cancelNotification(int id)`  
-\- `Stream<RemoteMessage> onRemoteMessage`
-
-\- Domain: `lib/domain/use_cases/schedule_notification_use_case.dart` — `AddTaskUseCase` veya viewmodel tarafından çağrılabilir.
-
-Entegrasyon:  
-\- Görev oluşturma/güncelleme sırasında `ScheduleNotificationUseCase` çağrısı yapın.  
-\- Silme sırasında planlı bildirimleri iptal edin.
-
-Paketler ve platform ayarları: `firebase_core`, `firebase_messaging`, `flutter_local_notifications`, `permission_handler`. Android ve iOS platform ayarlarını Firebase dokümanlarına göre yapın. Zaman çizelgesi için `timezone` paketi ile timezone-aware planlama yapın.
-
-3) Veritabanı / Kalıcılık (SQLite)
-
-Amaç: Bellek içi mock implementasyonları kalıcı SQLite depolamasıyla değiştirerek verilerin uygulama yeniden başlatmalarında korunmasını sağlamak.
-
-Önerilen yaklaşım:
-- Lokal DB: `sqflite` + `path_provider` kullanın.
-- Merkezi DB sarmalayıcısı: `lib/services/db_service.dart` oluşturun ve tüm repository'ler bu servisi kullanarak DB işlemlerini gerçekleştirsin.
-- Repository'ler: `TaskRepositorySqlite` ve `CalendarRepositorySqlite` gibi SQLite tabanlı implementasyonlar ekleyin. Mevcut `TaskRepository` arayüzünü koruyun ve implementasyonları değiştirin.
-
-`DBService` sorumlulukları:
-- Veritabanını başlatma ve migration yönetimi (`openDatabase`, `onCreate`, `onUpgrade`).
-- Temel CRUD yardımcı metodları: `insert`, `update`, `delete`, `query`, `transaction`.
-- Tekil örnek (singleton) olarak çalışmalı; `await DBService.instance.init()` benzeri bir başlangıç metodu `setupDependencies()` içinde çağrılmalı.
-
-Örnek tablo şeması (ilk versiyon):
-- `tasks`:
-    - `id INTEGER PRIMARY KEY AUTOINCREMENT`
-    - `title TEXT NOT NULL`
-    - `description TEXT`
-    - `dueDate INTEGER` (millisecondsSinceEpoch)
-    - `isCompleted INTEGER NOT NULL DEFAULT 0`
-    - `reminderAt INTEGER`
-    - `createdAt INTEGER NOT NULL`
-    - `updatedAt INTEGER`
-- `calendar_events`:
-    - `id INTEGER PRIMARY KEY AUTOINCREMENT`
-    - `title TEXT NOT NULL`
-    - `description TEXT`
-    - `startAt INTEGER`
-    - `endAt INTEGER`
-    - `createdAt INTEGER NOT NULL`
-    - `updatedAt INTEGER`
-- `ai_recommendations` (opsiyonel cache):
-    - `id INTEGER PRIMARY KEY AUTOINCREMENT`
-    - `source TEXT`
-    - `payload TEXT`
-    - `createdAt INTEGER NOT NULL`
-
-Model gereksinimleri:
-- `Task` ve `CalendarEvent` modelleri `toMap()` ve `fromMap(Map<String, dynamic>)` metotlarını implement etmeli.
-- Zaman damgaları millis cinsinden saklanmalı (`DateTime.millisecondsSinceEpoch`).
-
-Repository örnekleri:
-- `lib/data/repositories/task_repository_sqlite.dart` — `TaskRepository` arayüzünü kullanır ve `DBService` üzerinden SQL işlemlerini yapar.
-- Metotlar: `getTasks()`, `addTask()`, `updateTask()`, `deleteTask()`, `toggleTaskCompletion()`, `getUpcomingTasks()` — SQL filtreleri ve sıralama ile uygulanmalı.
-
-Başlatma / DI:
-- `lib/injection_container.dart` içindeki `setupDependencies()` async olmalı.
-- `await DBService.instance.init()` çağrısını `setupDependencies()` içinde yapın ve sonra repository'leri register edin.
-
-Migration & versiyonlama:
-- `DBService` içinde bir `_dbVersion` kullanın; `onUpgrade` içinde migration sorgularını ekleyin.
-- Şema değişikliklerinde versiyon numarasını artırın ve gerekli `ALTER`/migrate adımlarını yönetin.
-
-Senaryolar:
-- Lokal-only uygulama: `sqflite` yeterli ve önerilir.
-- Çoklu cihaz senkronizasyonu gerekiyorsa, SQLite + sunucu senkronizasyonu ya da Firestore düşünün (mimariye ek entegrasyon gerekir).
-
-Ek dosyalar önerisi:
-- `lib/services/db_service.dart` (SQLite wrapper)
-- `lib/data/repositories/task_repository_sqlite.dart`
-- `lib/data/repositories/calendar_repository_sqlite.dart`
-
-Notlar:
-- `pubspec.yaml` içinde `sqflite` ve `path_provider` paketlerini eklemeyi unutmayın.
-- DB init asenkron olduğundan `runApp` öncesinde DI setup'ını tamamlayın.
-
-
-Wiring örneği (kod yerleri)
-
-\- `lib/injection_container.dart` — `setupDependencies()` içinde DB ve Notification plugin başlatma; DB örneğini repository constructor'larına verin. `setupDependencies()` async olmalı ve `runApp` öncesi çağrılmalı.
-
-\- `lib/domain/use_cases/*` — soyut repository arayüzlerini kullanmaya devam eder.
-
-\- `lib/presentation/viewmodels/home_viewmodel.dart` — Görev yüklendiğinde veya değiştiğinde `getAIRecommendationsUseCase` çağırın. Göreve `reminder` eklendiğinde `ScheduleNotificationUseCase` çağırın.
-
-\- `lib/presentation/pages/*` ve `widgets/*` — UI, ViewModel metodlarını çağırmalı ve Provider üzerinden dinlemeli.
+```
 
 ---
 
-Güvenlik & gizli anahtarlar
+## 🏗 Mimari Yaklaşım
 
-\- API anahtarlarını repo'ya kesinlikle eklemeyin. `flutter_dotenv` veya CI secret'ları kullanın. Lokal anahtar dosyalarını `.gitignore`'a ekleyin.  
-\- Sunucu tabanlı AI ise token'ları mümkünse sunucu tarafında saklayın. Eğer doğrudan uygulamadan çağırıyorsanız kullanıcı onayı ve limitleri düşünün.
+Uygulama **Clean Architecture** prensiplerini takip eder:
 
----
-
-Önerilen paketler (örnek, `pubspec.yaml` güncellemesi)
-
-\- Ağ: `http` veya `dio`  
-\- AI: `openai` veya doğrudan `http`  
-\- DB: `sqflite` / `path_provider` veya `hive` / `hive_flutter` veya `isar`  
-\- Bildirimler: `flutter_local_notifications`, `firebase_messaging`, `timezone`  
-\- Çevre: `flutter_dotenv`  
-\- Diğer: `provider`, `intl`
-
-(Flutter SDK ile uyumluluk için sürümleri ayarlayın.)
+1. **Presentation (UI + ViewModels):** Kullanıcı etkileşimlerini yönetir. UI asla doğrudan Repository veya Service çağırmaz; ViewModel kullanır.
+2. **Domain (Use Cases):** İş mantığını barındırır (Örn: `GetTasksUseCase`).
+3. **Data (Repositories):** Verinin nereden geleceğine karar verir (DB, API, Mock).
+4. **Services:** Çapraz kesit endişelerini (AI, Auth, DB Connection) yönetir.
+5. **DI (`injection_container.dart`):** Uygulama başlatılmadan önce tüm bağımlılıkları (singleton) hazırlar.
 
 ---
 
-Test & doğrulama
+## 🚀 Uygulama Rehberi: Eksik Parçalar
 
-\- Unit testler: use-case ve repository testleri ekleyin (mock repository kullanarak).  
-\- Integration testler: UI hazırsa `flutter_test` ve `integration_test` kullanın.  
-\- Manuel doğrulama:
+### 1. Veritabanı / Kalıcılık (SQLite)
 
-\`\`\`bash
+Mevcut bellek içi (mock) yapıyı `sqflite` ile kalıcı hale getirin.
+
+* **Servis:** `lib/services/db_service.dart` (Singleton wrapper).
+* **Repository:** `TaskRepositorySqlite` sınıfını oluşturun ve SQL sorgularını buraya yazın.
+* **Schema (Örnek):**
+* `tasks`: id, title, description, dueDate, isCompleted, reminderAt
+* `calendar_events`: id, title, startAt, endAt
+
+
+
+### 2. AI Önerileri
+
+Kullanıcının görevlerine göre akıllı öneriler sunmak için.
+
+* **Servis:** `lib/services/ai_service.dart`.
+* **Yöntem:** OpenAI API veya benzeri bir LLM servisine prompt gönderimi.
+* **Akış:**
+  `ViewModel` -> `GetAIRecommendationsUseCase` -> `AIService` -> `API`
+
+### 3. Bildirimler (Push & Local)
+
+Zamanlanmış hatırlatıcılar için.
+
+* **Servis:** `lib/services/notification_service.dart`.
+* **Teknolojiler:** `flutter_local_notifications` (yerel zamanlama) ve `firebase_messaging` (uzak sunucu).
+* **Entegrasyon:** `AddTaskUseCase` içinde görev kaydedilirken, eğer hatırlatıcı varsa `ScheduleNotificationUseCase` çağrılmalıdır.
+
+---
+
+## 📦 Önerilen Paketler (`pubspec.yaml`)
+
+Aşağıdaki paketlerin uyumlu sürümlerini projeye dahil etmeniz önerilir:
+
+```yaml
+dependencies:
+  # Ağ & AI
+  http: ^1.x.x
+  # Veya openai_dart paketi
+
+  # Veritabanı
+  sqflite: ^2.x.x
+  path_provider: ^2.x.x
+
+  # Bildirimler
+  flutter_local_notifications: ^17.x.x
+  firebase_messaging: ^14.x.x
+  timezone: ^0.9.x
+
+  # Yardımcılar
+  flutter_dotenv: ^5.x.x  # API Key güvenliği için
+  provider: ^6.x.x
+  intl: ^0.18.x
+
+```
+
+---
+
+## 🔒 Güvenlik Notları
+
+* ⚠️ **API Anahtarları:** `.env` dosyası kullanın ve bu dosyayı `.gitignore`'a ekleyin. Repo'ya asla API key pushlamayın.
+* **Hassas Veri:** AI servisine veri gönderirken kullanıcı gizliliğine dikkat edin. Sadece gerekli veri parçalarını gönderin.
+
+---
+
+## 🧪 Test ve Çalıştırma
+
+Geliştirme ortamını hazırlamak ve test etmek için:
+
+```bash
+# Bağımlılıkları yükle
 flutter pub get
+
+# Hataları denetle
 flutter analyze
+
+# Testleri çalıştır
 flutter test
+
+# Uygulamayı başlat
 flutter run
-\`\`\`
+
+```
 
 ---
 
-Geliştirme ipuçları ve merge öncesi kontrol
+## 💡 Katkı Sağlama İpuçları
 
-\- AI ve push özelliklerini feature flag ile koruyun.  
-\- Analytics ve hata raporlama (ör. Sentry) ekleyin.  
-\- Repository değişimi yaparken migrate planı hazırlayın.  
-\- Mimari kararları kod yorumları ve README içinde belgeleyin.
+1. **Dependency Injection:** Yeni bir servis veya repository eklediğinizde `injection_container.dart` içindeki `setupDependencies()` metoduna kaydetmeyi unutmayın.
+2. **Migration:** Veritabanı şemasında değişiklik yaparken versiyonlamayı (`onUpgrade`) yönetin.
+3. **Code Style:** Repository arayüzlerini (`interface`) değiştirmemeye özen gösterin, sadece implementasyonları güncelleyin.
 
----
+```
 
-Örnek entegrasyon akışları (kısa)
-
-\- Görev ekleme ve hatırlatıcı
-1. UI, `reminder` alanıyla birlikte görev bilgilerini toplar ve `HomeViewModel.addTask(task)` çağırır.
-2. `HomeViewModel.addTask` `AddTaskUseCase` çağırır.
-3. `AddTaskUseCase` görev verisini `TaskRepository.addTask(task)` ile kalıcıya yazar.
-4. Eğer `task.reminder` doluysa `ScheduleNotificationUseCase` çağrılarak yerel bildirim zamanlanır.
-
-\- AI önerileri üretimi
-1. `HomeViewModel` veya `AIRecommendationsViewModel` `GetAIRecommendationsUseCase` çağırır.
-2. Use-case `AIService.getRecommendationsForUser(tasks, events)` çağrır.
-3. `AIService` seçilen AI sağlayıcısına prompt gönderir ve yapılandırılmış yanıtı parse eder.
-4. Use-case `List<AIRecommendation>` döndürür; UI bunları gösterir.
-
----
-
-Katkıda bulunanlara notlar
-
-\- `TaskRepository` arayüzünü stabil tutun; yeni ihtiyaçlar için arayüze metod ekleyin, mevcut imzaları değiştirmeyin.  
-\- Ayarları (`language`, `theme`) saklamak için `SharedPreferences` veya DB kullanmayı düşünün.  
-\- Kritik başlatmayı `setupDependencies()` içinde toplayın; rastgele dosyalarda global state oluşturmayın.
-
----
-
-Ek: Hangi dosyaları eklemelisiniz (kısa harita)
-
-\- `lib/services/ai_service.dart`  
-\- `lib/services/notification_service.dart`  
-\- `lib/services/db_service.dart`  
-\- `lib/data/repositories/task_repository_sqlite.dart`  
-\- `lib/data/repositories/calendar_repository_sqlite.dart`  
-\- `lib/domain/use_cases/get_ai_recommendations_use_case.dart`  
-\- `lib/domain/use_cases/schedule_notification_use_case.dart`  
-\- `lib/presentation/viewmodels/ai_viewmodel.dart`
-
----
+```
