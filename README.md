@@ -135,28 +135,73 @@ Entegrasyon:
 
 Paketler ve platform ayarları: `firebase_core`, `firebase_messaging`, `flutter_local_notifications`, `permission_handler`. Android ve iOS platform ayarlarını Firebase dokümanlarına göre yapın. Zaman çizelgesi için `timezone` paketi ile timezone-aware planlama yapın.
 
-3) Veritabanı / Kalıcılık
+3) Veritabanı / Kalıcılık (SQLite)
 
-Amaç: Bellek içi mock implementasyonları, kalıcı depolama ile değiştirerek verilerin uygulama yeniden başlatmalarında korunmasını sağlamak.
+Amaç: Bellek içi mock implementasyonları kalıcı SQLite depolamasıyla değiştirerek verilerin uygulama yeniden başlatmalarında korunmasını sağlamak.
 
-DB Seçenekleri:  
-\- SQLite (`sqflite`) — ilişkisel, karmaşık sorgular için iyi.  
-\- Hive — hızlı, NoSQL-benzeri objeye dönük depolama.  
-\- Isar — yüksek performanslı, reaktif sorgular.  
-\- Firebase Firestore — çoklu cihaz senkronizasyonu gerekiyorsa bulut.
+Önerilen yaklaşım:
+- Lokal DB: `sqflite` + `path_provider` kullanın.
+- Merkezi DB sarmalayıcısı: `lib/services/db_service.dart` oluşturun ve tüm repository'ler bu servisi kullanarak DB işlemlerini gerçekleştirsin.
+- Repository'ler: `TaskRepositorySqlite` ve `CalendarRepositorySqlite` gibi SQLite tabanlı implementasyonlar ekleyin. Mevcut `TaskRepository` arayüzünü koruyun ve implementasyonları değiştirin.
 
-Öneri: Lokal-only için `sqflite` veya `hive`. Çoklu cihaz sync gerekiyorsa Firestore veya özel backend ekleyin.
+`DBService` sorumlulukları:
+- Veritabanını başlatma ve migration yönetimi (`openDatabase`, `onCreate`, `onUpgrade`).
+- Temel CRUD yardımcı metodları: `insert`, `update`, `delete`, `query`, `transaction`.
+- Tekil örnek (singleton) olarak çalışmalı; `await DBService.instance.init()` benzeri bir başlangıç metodu `setupDependencies()` içinde çağrılmalı.
 
-Repository implementasyonu:  
-\- `TaskRepositoryImpl` yerine `TaskRepositorySqlite` veya `TaskRepositoryHive` ekleyin. `TaskRepository` soyut arayüzünü sabit tutun. Implement edin: `getTasks()`, `addTask(task)`, `updateTask(task)`, `deleteTask(id)`, `toggleTaskCompletion(id)`, `getUpcomingTasks()`.
+Örnek tablo şeması (ilk versiyon):
+- `tasks`:
+    - `id INTEGER PRIMARY KEY AUTOINCREMENT`
+    - `title TEXT NOT NULL`
+    - `description TEXT`
+    - `dueDate INTEGER` (millisecondsSinceEpoch)
+    - `isCompleted INTEGER NOT NULL DEFAULT 0`
+    - `reminderAt INTEGER`
+    - `createdAt INTEGER NOT NULL`
+    - `updatedAt INTEGER`
+- `calendar_events`:
+    - `id INTEGER PRIMARY KEY AUTOINCREMENT`
+    - `title TEXT NOT NULL`
+    - `description TEXT`
+    - `startAt INTEGER`
+    - `endAt INTEGER`
+    - `createdAt INTEGER NOT NULL`
+    - `updatedAt INTEGER`
+- `ai_recommendations` (opsiyonel cache):
+    - `id INTEGER PRIMARY KEY AUTOINCREMENT`
+    - `source TEXT`
+    - `payload TEXT`
+    - `createdAt INTEGER NOT NULL`
 
-DB servis: `lib/services/db_service.dart` — DB başlatma ve migrationları merkezi hale getirin. `injection_container.dart` içindeki `setupDependencies()` async olmalı ve burada DB init çağrılmalı.
+Model gereksinimleri:
+- `Task` ve `CalendarEvent` modelleri `toMap()` ve `fromMap(Map<String, dynamic>)` metotlarını implement etmeli.
+- Zaman damgaları millis cinsinden saklanmalı (`DateTime.millisecondsSinceEpoch`).
 
-Şema & modeller: Mevcut modelleri (`Task`, `CalendarEvent`) kullanın. `toMap()`/`fromMap()` metotlarını sqflite ile eşleyin veya Hive için `TypeAdapter` kaydedin.
+Repository örnekleri:
+- `lib/data/repositories/task_repository_sqlite.dart` — `TaskRepository` arayüzünü kullanır ve `DBService` üzerinden SQL işlemlerini yapar.
+- Metotlar: `getTasks()`, `addTask()`, `updateTask()`, `deleteTask()`, `toggleTaskCompletion()`, `getUpcomingTasks()` — SQL filtreleri ve sıralama ile uygulanmalı.
 
-Migration & sync: Uzak senkronizasyon planlıyorsanız `createdAt` / `updatedAt` timestamp'leri kullanın.
+Başlatma / DI:
+- `lib/injection_container.dart` içindeki `setupDependencies()` async olmalı.
+- `await DBService.instance.init()` çağrısını `setupDependencies()` içinde yapın ve sonra repository'leri register edin.
 
----
+Migration & versiyonlama:
+- `DBService` içinde bir `_dbVersion` kullanın; `onUpgrade` içinde migration sorgularını ekleyin.
+- Şema değişikliklerinde versiyon numarasını artırın ve gerekli `ALTER`/migrate adımlarını yönetin.
+
+Senaryolar:
+- Lokal-only uygulama: `sqflite` yeterli ve önerilir.
+- Çoklu cihaz senkronizasyonu gerekiyorsa, SQLite + sunucu senkronizasyonu ya da Firestore düşünün (mimariye ek entegrasyon gerekir).
+
+Ek dosyalar önerisi:
+- `lib/services/db_service.dart` (SQLite wrapper)
+- `lib/data/repositories/task_repository_sqlite.dart`
+- `lib/data/repositories/calendar_repository_sqlite.dart`
+
+Notlar:
+- `pubspec.yaml` içinde `sqflite` ve `path_provider` paketlerini eklemeyi unutmayın.
+- DB init asenkron olduğundan `runApp` öncesinde DI setup'ını tamamlayın.
+
 
 Wiring örneği (kod yerleri)
 
