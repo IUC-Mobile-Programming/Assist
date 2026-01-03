@@ -1,23 +1,9 @@
 # ASSIST AI — Proje README
 
-Bu README, proje yapısını, mimariyi ve eksik parçaların (AI önerileri, push bildirimleri ve veritabanı yönetimi) nerede uygulanacağını açıklar. UI öğelerini siz (UI sahibi) uygulayacaksınız; bu doküman, backend ve entegrasyon işlerini tamamlayacak implementerlere yöneliktir.
-
----
-
-Teslim edeceğim özet
-\- Net bir proje genel bakışı ve mimari açıklaması
-\- Dosya / klasör haritası ve sorumluluklar
-\- Özel talimatlar (ne uygulanmalı, nerede ve neden) için:
-\- AI önerileri (servis + domain + UI bağlantısı)
-\- Push bildirimleri (firebase + yerel zamanlama)
-\- Veritabanı kalıcılığı (yerel DB + repository bağlantısı)
-\- Önerilen paketler ve platform/izin notları
-\- Örnek entegrasyon akışları, test ve doğrulama komutları
-
----
+Bu README, proje yapısını, mimariyi ve eksik parçaların (AI önerileri, push bildirimleri ve veritabanı yönetimi) nerede uygulanacağını açıklar.
 
 Uygulayıcılar için kontrol listesi (yüksek seviye)
-\- [ ] AI için backend stratejisi seç (bulut veya cihaz içi) ve `lib/services/ai_service.dart` + API anahtarı yönetimi ekle
+\- [ ] AI için backend stratejisi seç (bulut) ve `lib/services/ai_service.dart` + API anahtarı yönetimi ekle
 \- [ ] Kalıcı `TaskRepository` & `CalendarRepository` uygula (sqflite/hive/isar/Firebase)
 \- [ ] `NotificationService` uygula ve bildirimleri zamanla (flutter_local_notifications ve/veya firebase_messaging kullan)
 \- [ ] AI önerilerini `HomeViewModel` içine bağla veya `AIRecommendationsViewModel` ekle (domain use-case'leri kullan)
@@ -295,8 +281,3 @@ Ek: Hangi dosyaları eklemelisiniz (kısa harita)
 \- `lib/presentation/viewmodels/ai_viewmodel.dart`
 
 ---
-
-İsterseniz ben başlangıç için şu scaffold'ları oluşturabilirim:
-\- `AIService`, `NotificationService`, `DBService` için temel dosyalar  
-\- `sqflite` tabanlı örnek `TaskRepository` ve `setupDependencies()` async başlangıcı  
-\- `HomeViewModel` için örnek birim test (fake repository ile)
