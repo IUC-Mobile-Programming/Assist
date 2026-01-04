@@ -107,7 +107,7 @@ class _AppState extends State<App> {
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: themeService.isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
+              color: themeService.isDarkMode ? Colors.black87 : Colors.white,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Image.asset("lib/assets/images/img.png")

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
 import 'package:Assist/presentation/widgets/task_item.dart';
 import 'package:Assist/presentation/widgets/recommendation_item.dart';
@@ -12,21 +13,26 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  late final HomeViewModel _viewModel;
+  late HomeViewModel _viewModel;
   final TextEditingController _voiceController = TextEditingController();
   bool _isListening = false;
 
   @override
   void initState() {
     super.initState();
-    // Use the factory method to create ViewModel
-    _viewModel = HomeViewModel.create();
-    _viewModel.addListener(_onViewModelChange);
+    // Get the ViewModel from Provider after first frame and attach listener
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewModel = Provider.of<HomeViewModel>(context, listen: false);
+      _viewModel.addListener(_onViewModelChange);
+    });
   }
 
   @override
   void dispose() {
-    _viewModel.removeListener(_onViewModelChange);
+    // Remove listener if viewmodel was attached
+    try {
+      _viewModel.removeListener(_onViewModelChange);
+    } catch (_) {}
     _voiceController.dispose();
     super.dispose();
   }
@@ -37,18 +43,20 @@ class HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_viewModel.isLoading && _viewModel.tasks.isEmpty) {
+    final viewModel = Provider.of<HomeViewModel>(context);
+
+    if (viewModel.isLoading && viewModel.tasks.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_viewModel.error != null) {
+    if (viewModel.error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(_viewModel.error!),
+            Text(viewModel.error!),
             ElevatedButton(
-              onPressed: () => _viewModel.loadTasks(),
+              onPressed: () => viewModel.loadTasks(),
               child: const Text('Tekrar Dene'),
             ),
           ],
@@ -57,7 +65,7 @@ class HomePageState extends State<HomePage> {
     }
 
     return _HomeContent(
-      viewModel: _viewModel,
+      viewModel: viewModel,
       voiceController: _voiceController,
       isListening: _isListening,
       onToggleListening: _toggleListening,
@@ -168,7 +176,7 @@ class _HomeContent extends StatelessWidget {
                 Text(
                   '${viewModel.pendingTasksCount} bekleyen göreviniz var',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Color.fromRGBO(255, 255, 255, 0.9),
                     fontSize: 14,
                   ),
                 ),

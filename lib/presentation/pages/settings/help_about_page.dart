@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Assist/presentation/viewmodels/settings_viewmodel.dart';
-import 'package:Assist/services/localization_service.dart';
 
 class HelpAboutPage extends StatelessWidget {
   const HelpAboutPage({super.key});

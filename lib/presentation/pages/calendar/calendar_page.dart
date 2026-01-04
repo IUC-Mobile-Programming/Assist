@@ -4,7 +4,6 @@ import 'package:Assist/presentation/viewmodels/calendar_viewmodel.dart';
 import 'package:Assist/presentation/widgets/calendar_header.dart';
 import 'package:Assist/presentation/widgets/calendar_grid.dart';
 import 'package:Assist/presentation/widgets/calendar_navigation.dart';
-import 'package:Assist/services/localization_service.dart';
 
 class CalendarPage extends StatelessWidget {
   const CalendarPage({super.key});

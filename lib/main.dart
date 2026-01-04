@@ -16,6 +16,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locator = ServiceLocator();
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ServiceLocator().themeService),

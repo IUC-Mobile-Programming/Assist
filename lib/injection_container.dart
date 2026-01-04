@@ -12,24 +12,78 @@ import 'package:Assist/presentation/viewmodels/settings_viewmodel.dart';
 class ServiceLocator {
   static final ServiceLocator _instance = ServiceLocator._internal();
   factory ServiceLocator() => _instance;
-  ServiceLocator._internal();
+  ServiceLocator._internal() {
+    // Initialize singletons
+    _taskRepository = TaskRepositoryImpl();
+    _calendarRepository = CalendarRepositoryImpl();
+
+    // Use cases
+    _getTasksUseCase = GetTasksUseCase(_taskRepository);
+    _addTaskUseCase = AddTaskUseCase(_taskRepository);
+    _toggleTaskCompletionUseCase = ToggleTaskCompletionUseCase(_taskRepository);
+    _getUpcomingTasksUseCase = GetUpcomingTasksUseCase(_taskRepository);
+
+    _getEventsUseCase = GetEventsUseCase(_calendarRepository);
+    _addEventUseCase = AddEventUseCase(_calendarRepository);
+    _getEventsForDateUseCase = GetEventsForDateUseCase(_calendarRepository);
+
+    // Services
+    _localizationService = LocalizationService();
+    _themeService = ThemeService();
+
+    // ViewModels (long-lived singletons)
+    _homeViewModel = HomeViewModel(
+      getTasksUseCase: _getTasksUseCase,
+      addTaskUseCase: _addTaskUseCase,
+      toggleTaskCompletionUseCase: _toggleTaskCompletionUseCase,
+      getUpcomingTasksUseCase: _getUpcomingTasksUseCase,
+    );
+
+    _calendarViewModel = CalendarViewModel(
+      getEventsUseCase: _getEventsUseCase,
+      addEventUseCase: _addEventUseCase,
+      getEventsForDateUseCase: _getEventsForDateUseCase,
+    );
+
+    _settingsViewModel = SettingsViewModel(
+      themeService: _themeService,
+      localizationService: _localizationService,
+    );
+  }
+
+  // Private backing fields
+  late final TaskRepository _taskRepository;
+  late final CalendarRepository _calendarRepository;
+
+  late final GetTasksUseCase _getTasksUseCase;
+  late final AddTaskUseCase _addTaskUseCase;
+  late final ToggleTaskCompletionUseCase _toggleTaskCompletionUseCase;
+  late final GetUpcomingTasksUseCase _getUpcomingTasksUseCase;
+
+  late final GetEventsUseCase _getEventsUseCase;
+  late final AddEventUseCase _addEventUseCase;
+  late final GetEventsForDateUseCase _getEventsForDateUseCase;
+
+  late final LocalizationService _localizationService;
+  late final ThemeService _themeService;
+
+  late final HomeViewModel _homeViewModel;
+  late final CalendarViewModel _calendarViewModel;
+  late final SettingsViewModel _settingsViewModel;
 
   // Repositories
-  TaskRepository get taskRepository => TaskRepositoryImpl();
-  CalendarRepository get calendarRepository => CalendarRepositoryImpl();
+  TaskRepository get taskRepository => _taskRepository;
+  CalendarRepository get calendarRepository => _calendarRepository;
 
   // Use Cases
-  GetTasksUseCase get getTasksUseCase => GetTasksUseCase(taskRepository);
-  AddTaskUseCase get addTaskUseCase => AddTaskUseCase(taskRepository);
-  ToggleTaskCompletionUseCase get toggleTaskCompletionUseCase =>
-      ToggleTaskCompletionUseCase(taskRepository);
-  GetUpcomingTasksUseCase get getUpcomingTasksUseCase =>
-      GetUpcomingTasksUseCase(taskRepository);
+  GetTasksUseCase get getTasksUseCase => _getTasksUseCase;
+  AddTaskUseCase get addTaskUseCase => _addTaskUseCase;
+  ToggleTaskCompletionUseCase get toggleTaskCompletionUseCase => _toggleTaskCompletionUseCase;
+  GetUpcomingTasksUseCase get getUpcomingTasksUseCase => _getUpcomingTasksUseCase;
 
-  GetEventsUseCase get getEventsUseCase => GetEventsUseCase(calendarRepository);
-  AddEventUseCase get addEventUseCase => AddEventUseCase(calendarRepository);
-  GetEventsForDateUseCase get getEventsForDateUseCase =>
-      GetEventsForDateUseCase(calendarRepository);
+  GetEventsUseCase get getEventsUseCase => _getEventsUseCase;
+  AddEventUseCase get addEventUseCase => _addEventUseCase;
+  GetEventsForDateUseCase get getEventsForDateUseCase => _getEventsForDateUseCase;
 
   // Services
   LocalizationService get localizationService => LocalizationService();
@@ -38,25 +92,12 @@ class ServiceLocator {
   DatabaseService get databaseService => _databaseService;
 
   // ViewModels
-  HomeViewModel get homeViewModel => HomeViewModel(
-    getTasksUseCase: getTasksUseCase,
-    addTaskUseCase: addTaskUseCase,
-    toggleTaskCompletionUseCase: toggleTaskCompletionUseCase,
-    getUpcomingTasksUseCase: getUpcomingTasksUseCase,
-  );
-
-  CalendarViewModel get calendarViewModel => CalendarViewModel(
-    getEventsUseCase: getEventsUseCase,
-    addEventUseCase: addEventUseCase,
-    getEventsForDateUseCase: getEventsForDateUseCase,
-  );
-
-  SettingsViewModel get settingsViewModel => SettingsViewModel(
-    themeService: themeService,
-    localizationService: localizationService,
-  );
+  HomeViewModel get homeViewModel => _homeViewModel;
+  CalendarViewModel get calendarViewModel => _calendarViewModel;
+  SettingsViewModel get settingsViewModel => _settingsViewModel;
 }
 
 void setupDependencies() {
-  // Initialize any dependencies here
+  // Intentionally left for future async initializations (e.g., loading persisted preferences)
+  // Currently ServiceLocator has been initialized lazily by its factory.
 }

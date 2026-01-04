@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:Assist/data/models/task.dart';
-import 'package:Assist/services/localization_service.dart';
 
 class TaskItem extends StatelessWidget {
   final Task task;
@@ -18,7 +17,6 @@ class TaskItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    final localizationService = LocalizationService();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -28,7 +26,7 @@ class TaskItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
+            color: Color.fromRGBO(0, 0, 0, isDarkMode ? 0.3 : 0.1),
             blurRadius: 3,
             offset: const Offset(0, 2),
           ),

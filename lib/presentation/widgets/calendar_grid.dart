@@ -70,7 +70,7 @@ class _CalendarGridState extends State<CalendarGrid> {
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Color.fromRGBO(0, 0, 0, 0.2),
                   blurRadius: 8,
                   spreadRadius: 2,
                   offset: const Offset(0, 4),
@@ -240,7 +240,7 @@ class _CalendarGridState extends State<CalendarGrid> {
       child: Container(
         margin: const EdgeInsets.all(2),
         decoration: BoxDecoration(
-          color: isToday ? theme.primaryColor.withOpacity(0.2) : Colors.transparent,
+          color: isToday ? theme.primaryColor.withAlpha((0.2 * 255).round()) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isToday ? theme.primaryColor : Colors.transparent,
@@ -338,7 +338,7 @@ class _CalendarGridState extends State<CalendarGrid> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: isToday ? theme.primaryColor.withOpacity(0.2) : Colors.transparent,
+                  color: isToday ? theme.primaryColor.withAlpha((0.2 * 255).round()) : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,
