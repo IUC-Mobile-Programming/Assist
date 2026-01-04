@@ -42,16 +42,7 @@ class HomeViewModel extends ChangeNotifier {
     _loadInitialData();
   }
 
-  // Factory method for creating a ViewModel with default dependencies
-  factory HomeViewModel.create() {
-    final taskRepository = TaskRepositoryImpl();
-    return HomeViewModel(
-      getTasksUseCase: GetTasksUseCase(taskRepository),
-      addTaskUseCase: AddTaskUseCase(taskRepository),
-      toggleTaskCompletionUseCase: ToggleTaskCompletionUseCase(taskRepository),
-      getUpcomingTasksUseCase: GetUpcomingTasksUseCase(taskRepository),
-    );
-  }
+  // Note: Default instances are provided by the application's ServiceLocator.
 
   Future<void> _loadInitialData() async {
     await loadTasks();

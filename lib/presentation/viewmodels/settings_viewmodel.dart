@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:Assist/services/theme_service.dart';
 import 'package:Assist/services/localization_service.dart';
+import 'package:Assist/presentation/viewmodels/base_viewmodel.dart';
 
 enum SettingsSection { main, notifications, privacy, language, helpAbout }
 
-class SettingsViewModel extends ChangeNotifier {
+class SettingsViewModel extends BaseViewModel {
   final ThemeService? _themeService;
   final LocalizationService _localizationService;
 

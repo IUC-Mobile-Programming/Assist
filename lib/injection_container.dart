@@ -1,21 +1,55 @@
 import 'package:Assist/data/repositories/task_repository.dart';
 import 'package:Assist/data/repositories/calendar_repository.dart';
+import 'package:Assist/data/repositories/mocks/task_repository_mock.dart';
+import 'package:Assist/data/repositories/mocks/calendar_repository_mock.dart';
 import 'package:Assist/domain/use_cases/task_use_cases.dart';
 import 'package:Assist/domain/use_cases/calendar_use_cases.dart';
+import 'package:Assist/services/ai_service.dart';
+import 'package:Assist/services/db_service.dart';
+import 'package:Assist/services/notification_service.dart';
 import 'package:Assist/services/localization_service.dart';
 import 'package:Assist/services/theme_service.dart';
-import 'package:Assist/services/database_service.dart';
 import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
 import 'package:Assist/presentation/viewmodels/calendar_viewmodel.dart';
 import 'package:Assist/presentation/viewmodels/settings_viewmodel.dart';
 
 class ServiceLocator {
+  // Private backing fields (declare before constructor so assignments are
+  // recognized by the analyzer when used inside the constructor).
+  late final TaskRepository _taskRepository;
+  late final CalendarRepository _calendarRepository;
+
+  late final GetTasksUseCase _getTasksUseCase;
+  late final AddTaskUseCase _addTaskUseCase;
+  late final ToggleTaskCompletionUseCase _toggleTaskCompletionUseCase;
+  late final GetUpcomingTasksUseCase _getUpcomingTasksUseCase;
+
+  late final GetEventsUseCase _getEventsUseCase;
+  late final AddEventUseCase _addEventUseCase;
+  late final GetEventsForDateUseCase _getEventsForDateUseCase;
+
+  late final LocalizationService _localizationService;
+  late final ThemeService _themeService;
+  late final AIService _aiService;
+  late final DbService _dbService;
+  late final NotificationService _notificationService;
+
+  late final HomeViewModel _homeViewModel;
+  late final CalendarViewModel _calendarViewModel;
+  late final SettingsViewModel _settingsViewModel;
+
   static final ServiceLocator _instance = ServiceLocator._internal();
   factory ServiceLocator() => _instance;
+
   ServiceLocator._internal() {
     // Initialize singletons
-    _taskRepository = TaskRepositoryImpl();
-    _calendarRepository = CalendarRepositoryImpl();
+    // Currently using in-memory mock implementations. Replace with persistent implementations later.
+    _taskRepository = InMemoryTaskRepository();
+    _calendarRepository = InMemoryCalendarRepository();
+    // Services - register lightweight/in-memory defaults
+    _aiService = InMemoryAIService();
+    _dbService = InMemoryDbService();
+    _notificationService = InMemoryNotificationService();
 
     // Use cases
     _getTasksUseCase = GetTasksUseCase(_taskRepository);
@@ -52,26 +86,6 @@ class ServiceLocator {
     );
   }
 
-  // Private backing fields
-  late final TaskRepository _taskRepository;
-  late final CalendarRepository _calendarRepository;
-
-  late final GetTasksUseCase _getTasksUseCase;
-  late final AddTaskUseCase _addTaskUseCase;
-  late final ToggleTaskCompletionUseCase _toggleTaskCompletionUseCase;
-  late final GetUpcomingTasksUseCase _getUpcomingTasksUseCase;
-
-  late final GetEventsUseCase _getEventsUseCase;
-  late final AddEventUseCase _addEventUseCase;
-  late final GetEventsForDateUseCase _getEventsForDateUseCase;
-
-  late final LocalizationService _localizationService;
-  late final ThemeService _themeService;
-
-  late final HomeViewModel _homeViewModel;
-  late final CalendarViewModel _calendarViewModel;
-  late final SettingsViewModel _settingsViewModel;
-
   // Repositories
   TaskRepository get taskRepository => _taskRepository;
   CalendarRepository get calendarRepository => _calendarRepository;
@@ -87,10 +101,11 @@ class ServiceLocator {
   GetEventsForDateUseCase get getEventsForDateUseCase => _getEventsForDateUseCase;
 
   // Services
-  LocalizationService get localizationService => LocalizationService();
-  ThemeService get themeService => ThemeService();
-  final DatabaseService _databaseService = DatabaseService();
-  DatabaseService get databaseService => _databaseService;
+  LocalizationService get localizationService => _localizationService;
+  ThemeService get themeService => _themeService;
+  AIService get aiService => _aiService;
+  DbService get dbService => _dbService;
+  NotificationService get notificationService => _notificationService;
 
   // ViewModels
   HomeViewModel get homeViewModel => _homeViewModel;
@@ -98,7 +113,11 @@ class ServiceLocator {
   SettingsViewModel get settingsViewModel => _settingsViewModel;
 }
 
-void setupDependencies() {
-  // Intentionally left for future async initializations (e.g., loading persisted preferences)
-  // Currently ServiceLocator has been initialized lazily by its factory.
+/// Initialize longer-running services (DB, notifications) asynchronously.
+/// Call and await this before runApp in `main.dart`.
+Future<void> setupDependencies() async {
+  final locator = ServiceLocator();
+  // Initialize DB and notification service if present.
+  await locator.dbService.init();
+  await locator.notificationService.init();
 }
