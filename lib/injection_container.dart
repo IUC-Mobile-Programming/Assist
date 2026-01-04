@@ -5,7 +5,7 @@ import 'package:Assist/data/repositories/mocks/calendar_repository_mock.dart';
 import 'package:Assist/domain/use_cases/task_use_cases.dart';
 import 'package:Assist/domain/use_cases/calendar_use_cases.dart';
 import 'package:Assist/services/ai_service.dart';
-import 'package:Assist/services/db_service.dart';
+import 'package:Assist/services/database_service.dart';
 import 'package:Assist/services/notification_service.dart';
 import 'package:Assist/services/localization_service.dart';
 import 'package:Assist/services/theme_service.dart';
@@ -31,7 +31,7 @@ class ServiceLocator {
   late final LocalizationService _localizationService;
   late final ThemeService _themeService;
   late final AIService _aiService;
-  late final DbService _dbService;
+  late final DatabaseService _databaseService;
   late final NotificationService _notificationService;
 
   late final HomeViewModel _homeViewModel;
@@ -48,7 +48,7 @@ class ServiceLocator {
     _calendarRepository = InMemoryCalendarRepository();
     // Services - register lightweight/in-memory defaults
     _aiService = InMemoryAIService();
-    _dbService = InMemoryDbService();
+    _databaseService = DatabaseService();
     _notificationService = InMemoryNotificationService();
 
     // Use cases
@@ -104,7 +104,7 @@ class ServiceLocator {
   LocalizationService get localizationService => _localizationService;
   ThemeService get themeService => _themeService;
   AIService get aiService => _aiService;
-  DbService get dbService => _dbService;
+  DatabaseService get databaseService => _databaseService;
   NotificationService get notificationService => _notificationService;
 
   // ViewModels
@@ -118,6 +118,5 @@ class ServiceLocator {
 Future<void> setupDependencies() async {
   final locator = ServiceLocator();
   // Initialize DB and notification service if present.
-  await locator.dbService.init();
   await locator.notificationService.init();
 }
