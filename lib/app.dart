@@ -5,6 +5,7 @@ import 'package:Assist/presentation/pages/calendar/calendar_page.dart';
 import 'package:Assist/presentation/pages/settings/settings_page.dart';
 import 'package:Assist/services/theme_service.dart';
 import 'package:Assist/services/localization_service.dart';
+import 'package:Assist/presentation/widgets/add_task_bottom_sheet.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -14,6 +15,8 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
+
+
   int _currentPageIndex = 0;
 
   @override
@@ -143,9 +146,18 @@ class _AppState extends State<App> {
     return FloatingActionButton(
       backgroundColor: const Color(0xFF4CAF50),
       onPressed: () {
-        // TODO: Show add task dialog
+        _showAddTaskBottomSheet(context);
       },
       child: const Icon(Icons.add, color: Colors.white),
+    );
+  }
+
+  void _showAddTaskBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const AddTaskBottomSheet(),
     );
   }
 }

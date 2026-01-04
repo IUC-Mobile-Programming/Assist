@@ -4,6 +4,7 @@ import 'package:Assist/domain/use_cases/task_use_cases.dart';
 import 'package:Assist/domain/use_cases/calendar_use_cases.dart';
 import 'package:Assist/services/localization_service.dart';
 import 'package:Assist/services/theme_service.dart';
+import 'package:Assist/services/database_service.dart';
 import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
 import 'package:Assist/presentation/viewmodels/calendar_viewmodel.dart';
 import 'package:Assist/presentation/viewmodels/settings_viewmodel.dart';
@@ -33,6 +34,8 @@ class ServiceLocator {
   // Services
   LocalizationService get localizationService => LocalizationService();
   ThemeService get themeService => ThemeService();
+  final DatabaseService _databaseService = DatabaseService();
+  DatabaseService get databaseService => _databaseService;
 
   // ViewModels
   HomeViewModel get homeViewModel => HomeViewModel(

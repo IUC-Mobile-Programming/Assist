@@ -1,5 +1,6 @@
 import 'package:Assist/services/localization_service.dart';
 import 'package:Assist/services/theme_service.dart';
+import 'package:Assist/services/database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'app.dart';
@@ -19,6 +20,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ServiceLocator().themeService),
         ChangeNotifierProvider(create: (_) => ServiceLocator().localizationService),
+        ChangeNotifierProvider(create: (_) => ServiceLocator().databaseService),
         ChangeNotifierProvider(create: (_) => ServiceLocator().homeViewModel),
         ChangeNotifierProvider(create: (_) => ServiceLocator().calendarViewModel),
         ChangeNotifierProvider(create: (_) => ServiceLocator().settingsViewModel),
