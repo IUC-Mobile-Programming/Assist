@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:Assist/data/models/task.dart';
 import 'package:Assist/data/models/ai_recommendation.dart';
 import 'package:Assist/domain/use_cases/task_use_cases.dart';
-import 'package:Assist/data/repositories/task_repository.dart';
 
 class HomeViewModel extends ChangeNotifier {
   final GetTasksUseCase? _getTasksUseCase;
@@ -38,16 +37,7 @@ class HomeViewModel extends ChangeNotifier {
     _loadInitialData();
   }
 
-  // Factory method for creating a ViewModel with default dependencies
-  factory HomeViewModel.create() {
-    final taskRepository = TaskRepositoryImpl();
-    return HomeViewModel(
-      getTasksUseCase: GetTasksUseCase(taskRepository),
-      addTaskUseCase: AddTaskUseCase(taskRepository),
-      toggleTaskCompletionUseCase: ToggleTaskCompletionUseCase(taskRepository),
-      getUpcomingTasksUseCase: GetUpcomingTasksUseCase(taskRepository),
-    );
-  }
+  // Note: Default instances are provided by the application's ServiceLocator.
 
   Future<void> _loadInitialData() async {
     await loadTasks();
