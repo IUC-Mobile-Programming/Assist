@@ -1,5 +1,6 @@
 import 'package:Assist/services/localization_service.dart';
 import 'package:Assist/services/theme_service.dart';
+import 'package:Assist/services/database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'app.dart';
@@ -20,11 +21,12 @@ class MyApp extends StatelessWidget {
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(value: locator.themeService),
-        ChangeNotifierProvider.value(value: locator.localizationService),
-        ChangeNotifierProvider.value(value: locator.homeViewModel),
-        ChangeNotifierProvider.value(value: locator.calendarViewModel),
-        ChangeNotifierProvider.value(value: locator.settingsViewModel),
+        ChangeNotifierProvider(create: (_) => ServiceLocator().themeService),
+        ChangeNotifierProvider(create: (_) => ServiceLocator().localizationService),
+        ChangeNotifierProvider(create: (_) => ServiceLocator().databaseService),
+        ChangeNotifierProvider(create: (_) => ServiceLocator().homeViewModel),
+        ChangeNotifierProvider(create: (_) => ServiceLocator().calendarViewModel),
+        ChangeNotifierProvider(create: (_) => ServiceLocator().settingsViewModel),
       ],
       child: Consumer2<ThemeService, LocalizationService>(
         builder: (context, themeService, localizationService, _) {
