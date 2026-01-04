@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Assist/services/database_service.dart';
+import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
 
 class AddTaskBottomSheet extends StatefulWidget {
   const AddTaskBottomSheet({super.key});
@@ -14,19 +15,20 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
   final _descriptionController = TextEditingController();
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  String _selectedCategory = 'Work';
+  String _selectedCategory = 'Diğer';
   bool _isImportant = false;
 
   void _showFloatingSnack(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
         content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 80,
-          left: 16,
-          right: 16,
-        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tamam'),
+          ),
+        ],
       ),
     );
   }
@@ -78,7 +80,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  'Add New Task',
+                  'Yeni Görev Ekle',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -87,12 +89,12 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 const SizedBox(height: 20),
 
                 // Başlık
-                const Text('Title', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('Başlık', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _titleController,
                   decoration: InputDecoration(
-                    hintText: 'Enter task title',
+                    hintText: 'Görev başlığını girin',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -101,13 +103,13 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 const SizedBox(height: 16),
 
                 // Açıklama
-                const Text('Description', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('Açıklama', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _descriptionController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: 'Enter task description',
+                    hintText: 'Görev açıklamasını girin',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -116,7 +118,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 const SizedBox(height: 16),
 
                 // Tarih ve Saat
-                const Text('Due Date & Time', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('Tarih ve Saat', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -142,7 +144,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                           child: Text(
                             _selectedDate != null
                                 ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                                : 'Select date',
+                                : 'Tarih seçin',
                             style: TextStyle(
                               color: _selectedDate != null ? Colors.black : Colors.grey,
                             ),
@@ -171,7 +173,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                           child: Text(
                             _selectedTime != null
                                 ? _selectedTime!.format(context)
-                                : 'Select time',
+                                : 'Saat seçin',
                             style: TextStyle(
                               color: _selectedTime != null ? Colors.black : Colors.grey,
                             ),
@@ -184,19 +186,19 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 const SizedBox(height: 16),
 
                 // Görev Kategorisi
-                const Text('Category', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('Kategori', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 DropdownButton<String>(
                   value: _selectedCategory,
                   isExpanded: true,
-                  items: ['Work', 'Personal', 'Shopping', 'Health', 'Other']
+                  items: ['İş', 'Kişisel', 'Alışveriş', 'Sağlık', 'Diğer']
                       .map((category) => DropdownMenuItem(
                             value: category,
                             child: Text(category),
                           ))
                       .toList(),
                   onChanged: (value) {
-                    setState(() => _selectedCategory = value ?? 'Work');
+                    setState(() => _selectedCategory = value ?? 'Diğer');
                   },
                 ),
                 const SizedBox(height: 16),
@@ -211,7 +213,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                       },
                     ),
                     const Text(
-                      'Mark as Important',
+                      'Önemli olarak işaretle',
                       style: TextStyle(fontSize: 16),
                     ),
                   ],
@@ -230,15 +232,28 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                       ),
                     ),
                     onPressed: () async {
-                      // TODO Veri doğrulama
+                      // Validation
+                      if (_titleController.text.isEmpty) {
+                        _showFloatingSnack(context, 'Lütfen bir başlık girin');
+                        return;
+                      }
 
-                      // Get database service from Provider
+                      if (_selectedDate == null) {
+                        _showFloatingSnack(context, 'Lütfen bir bitiş tarihi seçin');
+                        return;
+                      }
+
+                      if (_selectedTime == null) {
+                        _showFloatingSnack(context, 'Lütfen bir bitiş saati seçin');
+                        return;
+                      }
+
                       final dbService = Provider.of<DatabaseService>(
                         context,
                         listen: false,
                       );
 
-                      // Combine date & time
+                      // Tarihi ve saati birleştir
                       DateTime? dueDate;
                       if (_selectedDate != null) {
                         final time = _selectedTime ?? const TimeOfDay(hour: 0, minute: 0);
@@ -251,7 +266,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                         );
                       }
 
-                      // Insert task into database
+                      // Veritabanına ekle
                       await dbService.insertTask({
                         'title': _titleController.text,
                         'dueDate': dueDate?.toIso8601String(),
@@ -265,11 +280,15 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
 
                       if (!context.mounted) return;
 
+                      // Refresh tasks in HomeViewModel
+                      final homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
+                      await homeViewModel.loadTasks();
+
                       final messenger = ScaffoldMessenger.of(context);
                       Navigator.pop(context);
                       messenger.showSnackBar(
                         const SnackBar(
-                          content: Text('Task added successfully'),
+                          content: Text('Görev başarıyla eklendi!'),
                           behavior: SnackBarBehavior.floating,
                           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         ),

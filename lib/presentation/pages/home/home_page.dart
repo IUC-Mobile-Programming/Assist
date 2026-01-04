@@ -175,7 +175,7 @@ class _HomeContent extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${viewModel.pendingTasksCount} bekleyen göreviniz var',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Color.fromRGBO(255, 255, 255, 0.9),
                     fontSize: 14,
                   ),
@@ -287,7 +287,7 @@ class _HomeContent extends StatelessWidget {
         ...viewModel.upcomingTasks.map((task) =>
             TaskItem(
               task: task,
-              onToggle: () => viewModel.toggleTaskCompletion(task.id),
+              onToggle: () => _confirmToggle(context, task),
             ),
         ),
       ],
@@ -300,7 +300,7 @@ class _HomeContent extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(
+            const Icon(
               Icons.auto_awesome,
               color: AppTheme.successColor,
             ),
@@ -388,5 +388,29 @@ class _HomeContent extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmToggle(BuildContext context, dynamic task) async {
+    final shouldToggle = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Görevi Tamamla?'),
+        content: Text('"${task.title}" görevini tamamlandı olarak işaretlemek istiyor musunuz?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Onayla'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldToggle == true) {
+      await viewModel.toggleTaskCompletion(task.id);
+    }
   }
 }

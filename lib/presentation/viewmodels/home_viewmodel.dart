@@ -3,12 +3,14 @@ import 'package:Assist/data/models/task.dart';
 import 'package:Assist/data/models/ai_recommendation.dart';
 import 'package:Assist/domain/use_cases/task_use_cases.dart';
 import 'package:Assist/data/repositories/task_repository.dart';
+import 'package:Assist/services/database_service.dart';
 
 class HomeViewModel extends ChangeNotifier {
   final GetTasksUseCase? _getTasksUseCase;
   final AddTaskUseCase? _addTaskUseCase;
   final ToggleTaskCompletionUseCase? _toggleTaskCompletionUseCase;
   final GetUpcomingTasksUseCase? _getUpcomingTasksUseCase;
+  final DatabaseService? _databaseService;
 
   List<Task> _tasks = [];
   List<Task> get tasks => _tasks;
@@ -31,10 +33,12 @@ class HomeViewModel extends ChangeNotifier {
     AddTaskUseCase? addTaskUseCase,
     ToggleTaskCompletionUseCase? toggleTaskCompletionUseCase,
     GetUpcomingTasksUseCase? getUpcomingTasksUseCase,
+    DatabaseService? databaseService,
   }) : _getTasksUseCase = getTasksUseCase,
         _addTaskUseCase = addTaskUseCase,
         _toggleTaskCompletionUseCase = toggleTaskCompletionUseCase,
-        _getUpcomingTasksUseCase = getUpcomingTasksUseCase {
+        _getUpcomingTasksUseCase = getUpcomingTasksUseCase,
+        _databaseService = databaseService {
     _loadInitialData();
   }
 
@@ -60,14 +64,50 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (_getTasksUseCase != null) {
+      if (_databaseService != null) {
+        // Fetch from database
+        final dbTasks = await _databaseService!.getTasks();
+        
+        // Convert database maps to Task objects
+        _tasks = [];
+        for (var taskMap in dbTasks) {
+          try {
+            final task = Task(
+              id: taskMap['id']?.toString(),
+              title: taskMap['title'] ?? '',
+              date: taskMap['dueDate'] != null 
+                  ? DateTime.parse(taskMap['dueDate']) 
+                  : DateTime.now(),
+              description: taskMap['description'] ?? '',
+              isCompleted: (taskMap['completed'] ?? 0) == 1,
+              isImportant: (taskMap['important'] ?? 0) == 1,
+              category: taskMap['category'] ?? 'Diğer',
+            );
+            _tasks.add(task);
+          } catch (taskError) {
+            // Skip invalid tasks
+          }
+        }
+      } else if (_getTasksUseCase != null) {
         _tasks = await _getTasksUseCase!.execute();
       } else {
         // Fallback to mock data
         _tasks = _getMockTasks();
       }
 
-      if (_getUpcomingTasksUseCase != null) {
+      // Filter upcoming tasks - use simple filter for database tasks
+      if (_databaseService != null) {
+        // For database tasks, show all incomplete tasks sorted by date, limit to 3
+        _upcomingTasks = _tasks
+            .where((task) => !task.isCompleted)
+            .toList()
+            ..sort((a, b) => a.date.compareTo(b.date));
+        
+        // Limit to 3 closest tasks
+        if (_upcomingTasks.length > 3) {
+          _upcomingTasks = _upcomingTasks.sublist(0, 3);
+        }
+      } else if (_getUpcomingTasksUseCase != null) {
         _upcomingTasks = await _getUpcomingTasksUseCase!.execute();
       } else {
         _upcomingTasks = _tasks.where((task) => !task.isCompleted).toList();
@@ -161,6 +201,20 @@ class HomeViewModel extends ChangeNotifier {
 
   Future<void> toggleTaskCompletion(String taskId) async {
     try {
+      // If a database is configured, delete the task directly from SQLite
+      if (_databaseService != null) {
+        final dbId = int.tryParse(taskId);
+        if (dbId == null) {
+          _error = 'Geçersiz görev kimliği';
+          notifyListeners();
+          return;
+        }
+
+        await _databaseService!.deleteTask(dbId);
+        await loadTasks();
+        return;
+      }
+
       if (_toggleTaskCompletionUseCase != null) {
         await _toggleTaskCompletionUseCase!.execute(taskId);
       } else {

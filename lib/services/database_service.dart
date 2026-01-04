@@ -28,7 +28,6 @@ class DatabaseService extends ChangeNotifier {
   }
 
   Future<void> _createDB(Database db, int version) async {
-    // Create your tables here
     await db.execute('''
       CREATE TABLE tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -37,6 +37,7 @@ class ServiceLocator {
       addTaskUseCase: _addTaskUseCase,
       toggleTaskCompletionUseCase: _toggleTaskCompletionUseCase,
       getUpcomingTasksUseCase: _getUpcomingTasksUseCase,
+      databaseService: _databaseService,
     );
 
     _calendarViewModel = CalendarViewModel(
