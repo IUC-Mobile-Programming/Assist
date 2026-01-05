@@ -12,13 +12,21 @@ dependencies:
   provider: ^6.1.0
   intl: ^0.18.0
   sqflite: ^2.3.0
+  sqflite_common_ffi: ^2.3.2
   path_provider: ^2.1.0
   path: ^1.8.3
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+
+hooks:
+  user_defines:
+    sqlite3:
+      source: system
+      name: sqlite3
 
 flutter:
   uses-material-design: true
