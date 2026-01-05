@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:Assist/data/models/task.dart';
 import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
 import 'package:Assist/presentation/widgets/task_item.dart';
 import 'package:Assist/presentation/widgets/recommendation_item.dart';
 import 'package:Assist/core/app_theme.dart';
+import 'package:Assist/injection_container.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,6 +20,9 @@ class HomePageState extends State<HomePage> {
   late HomeViewModel _viewModel;
   final TextEditingController _voiceController = TextEditingController();
   bool _isListening = false;
+  Timer? _suggestionDebounce;
+  String? _assistantSuggestion;
+  bool _isSuggesting = false;
 
   @override
   void initState() {
@@ -34,6 +41,7 @@ class HomePageState extends State<HomePage> {
       _viewModel.removeListener(_onViewModelChange);
     } catch (_) {}
     _voiceController.dispose();
+    _suggestionDebounce?.cancel();
     super.dispose();
   }
 
@@ -70,6 +78,10 @@ class HomePageState extends State<HomePage> {
       isListening: _isListening,
       onToggleListening: _toggleListening,
       onSendCommand: _sendCommand,
+      onVoiceChanged: (value) => _handleVoiceChanged(value, viewModel),
+      onApplySuggestion: _applyAssistantSuggestion,
+      assistantSuggestion: _assistantSuggestion,
+      isSuggesting: _isSuggesting,
     );
   }
 
@@ -82,17 +94,98 @@ class HomePageState extends State<HomePage> {
     });
   }
 
-  void _sendCommand() {
-    if (_voiceController.text.isEmpty) return;
+  Future<void> _sendCommand() async {
+    final input = _voiceController.text.trim();
+    if (input.isEmpty) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Komut işlendi: "${_voiceController.text}"'),
-        backgroundColor: AppTheme.successColor,
-      ),
+    final viewModel = Provider.of<HomeViewModel>(context, listen: false);
+    final task = Task(
+      title: input,
+      description: 'ASSIST AI komutuyla eklendi.',
+      date: DateTime.now(),
     );
-    _voiceController.clear();
+
+    await viewModel.addTask(task);
+    if (!mounted) return;
+
+    if (viewModel.error == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Görev eklendi: "$input"'),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
+      _voiceController.clear();
+      setState(() => _assistantSuggestion = null);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(viewModel.error!),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
     setState(() => _isListening = false);
+  }
+
+  void _applyAssistantSuggestion() {
+    final suggestion = _assistantSuggestion?.trim();
+    if (suggestion == null || suggestion.isEmpty) return;
+
+    final current = _voiceController.text;
+    final trimmedCurrent = current.trimRight();
+    final trimmedSuggestion = suggestion.trimLeft();
+    final updated = trimmedCurrent.isEmpty
+        ? trimmedSuggestion
+        : '$trimmedCurrent $trimmedSuggestion';
+
+    _suggestionDebounce?.cancel();
+    _voiceController.text = updated;
+    _voiceController.selection = TextSelection.collapsed(offset: updated.length);
+    setState(() {
+      _assistantSuggestion = null;
+      _isSuggesting = false;
+    });
+  }
+
+  void _handleVoiceChanged(String value, HomeViewModel viewModel) {
+    _suggestionDebounce?.cancel();
+    if (_assistantSuggestion != null) {
+      setState(() => _assistantSuggestion = null);
+    }
+    final trimmed = value.trim();
+    if (trimmed.length < 3) {
+      if (_isSuggesting) {
+        setState(() {
+          _isSuggesting = false;
+        });
+      }
+      return;
+    }
+
+    _suggestionDebounce = Timer(const Duration(milliseconds: 350), () async {
+      if (!mounted) return;
+      setState(() => _isSuggesting = true);
+      try {
+        final suggestion = await ServiceLocator()
+            .aiService
+            .generateAssistantCompletion(
+              input: trimmed,
+              context: viewModel.tasks,
+            );
+        if (!mounted) return;
+        if (_voiceController.text.trim() != trimmed) return;
+        setState(() => _assistantSuggestion = suggestion);
+      } catch (_) {
+        if (!mounted) return;
+        if (_voiceController.text.trim() != trimmed) return;
+        setState(() => _assistantSuggestion = null);
+      } finally {
+        if (!mounted) return;
+        if (_voiceController.text.trim() != trimmed) return;
+        setState(() => _isSuggesting = false);
+      }
+    });
   }
 }
 
@@ -102,6 +195,10 @@ class _HomeContent extends StatelessWidget {
   final bool isListening;
   final VoidCallback onToggleListening;
   final VoidCallback onSendCommand;
+  final ValueChanged<String> onVoiceChanged;
+  final VoidCallback onApplySuggestion;
+  final String? assistantSuggestion;
+  final bool isSuggesting;
 
   const _HomeContent({
     required this.viewModel,
@@ -109,6 +206,10 @@ class _HomeContent extends StatelessWidget {
     required this.isListening,
     required this.onToggleListening,
     required this.onSendCommand,
+    required this.onVoiceChanged,
+    required this.onApplySuggestion,
+    required this.assistantSuggestion,
+    required this.isSuggesting,
   });
 
   @override
@@ -325,6 +426,14 @@ class _HomeContent extends StatelessWidget {
   }
 
   Widget _buildVoiceCommandSection(BuildContext context, ThemeData theme, bool isDarkMode) {
+    const inputPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 14);
+    final hasInput = voiceController.text.trim().isNotEmpty;
+    final suggestion = assistantSuggestion?.trim();
+    final showSuggestion = hasInput && suggestion != null && suggestion.isNotEmpty;
+    final completionText =
+        showSuggestion ? ' ${suggestion.trimLeft()}' : '';
+    final baseStyle = theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -352,21 +461,47 @@ class _HomeContent extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: voiceController,
-                  decoration: InputDecoration(
-                    hintText: 'Görev ekle veya soru sor...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        isListening ? Icons.mic_off : Icons.mic,
-                        color: isListening ? Colors.red : Colors.blue,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Padding(
+                          padding: inputPadding,
+                          child: RichText(
+                            text: TextSpan(
+                              style: baseStyle.copyWith(color: Colors.transparent),
+                              children: [
+                                TextSpan(text: voiceController.text),
+                                TextSpan(
+                                  text: completionText,
+                                  style: baseStyle.copyWith(color: Colors.grey.shade500),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                      onPressed: onToggleListening,
                     ),
-                  ),
+                    TextField(
+                      controller: voiceController,
+                      onChanged: onVoiceChanged,
+                      style: baseStyle,
+                      decoration: InputDecoration(
+                        hintText: 'Görev ekle veya soru sor...',
+                        contentPadding: inputPadding,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            isListening ? Icons.mic_off : Icons.mic,
+                            color: isListening ? Colors.red : Colors.blue,
+                          ),
+                          onPressed: onToggleListening,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -380,6 +515,23 @@ class _HomeContent extends StatelessWidget {
               ),
             ],
           ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: showSuggestion ? onApplySuggestion : null,
+              icon: const Icon(Icons.check),
+              label: const Text('Tamamla'),
+            ),
+          ),
+          if (isSuggesting)
+            const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
           const SizedBox(height: 8),
           const Text(
             'Örnek: "Yarın saat 15:00\'te toplantı ekle"',

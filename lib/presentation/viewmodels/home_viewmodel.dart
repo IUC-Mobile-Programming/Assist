@@ -198,7 +198,18 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (_addTaskUseCase != null) {
+      if (_databaseService != null) {
+        await _databaseService!.insertTask({
+          'title': task.title,
+          'description': task.description,
+          'dueDate': task.date.toIso8601String(),
+          'category': task.category ?? 'Diğer',
+          'completed': task.isCompleted ? 1 : 0,
+          'important': task.isImportant ? 1 : 0,
+          'createdAt': task.createdAt.toIso8601String(),
+          'updatedAt': (task.updatedAt ?? DateTime.now()).toIso8601String(),
+        });
+      } else if (_addTaskUseCase != null) {
         await _addTaskUseCase!.execute(task);
       }
       await loadTasks(); // Refresh tasks
