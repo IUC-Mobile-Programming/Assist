@@ -47,7 +47,7 @@ class ServiceLocator {
     _taskRepository = InMemoryTaskRepository();
     _calendarRepository = InMemoryCalendarRepository();
     // Services - register lightweight/in-memory defaults
-    _aiService = InMemoryAIService();
+    _aiService = OllamaAIService();
     _databaseService = DatabaseService();
     _notificationService = InMemoryNotificationService();
 
@@ -72,6 +72,7 @@ class ServiceLocator {
       toggleTaskCompletionUseCase: _toggleTaskCompletionUseCase,
       getUpcomingTasksUseCase: _getUpcomingTasksUseCase,
       databaseService: _databaseService,
+      aiService: _aiService,
     );
 
     _calendarViewModel = CalendarViewModel(

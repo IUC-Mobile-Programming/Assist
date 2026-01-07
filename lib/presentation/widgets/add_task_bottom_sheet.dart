@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Assist/services/database_service.dart';
 import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
+import 'package:Assist/injection_container.dart';
 
 class AddTaskBottomSheet extends StatefulWidget {
   const AddTaskBottomSheet({super.key});
@@ -17,6 +18,8 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
   TimeOfDay? _selectedTime;
   String _selectedCategory = 'Diğer';
   bool _isImportant = false;
+  String? _descriptionSuggestion;
+  bool _isSuggestionLoading = false;
 
   void _showFloatingSnack(BuildContext context, String message) {
     showDialog(
@@ -38,6 +41,40 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchDescriptionSuggestion() async {
+    if (_isSuggestionLoading) return;
+    if (_descriptionController.text.trim().isNotEmpty) {
+      return;
+    }
+
+    setState(() => _isSuggestionLoading = true);
+    try {
+      final aiService = ServiceLocator().aiService;
+      final suggestion = await aiService.generateTaskDescriptionSuggestion(
+        title: _titleController.text,
+        category: _selectedCategory,
+      );
+      if (!mounted) return;
+      setState(() => _descriptionSuggestion = suggestion);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _descriptionSuggestion = null);
+    } finally {
+      if (!mounted) return;
+      setState(() => _isSuggestionLoading = false);
+    }
+  }
+
+  void _applyDescriptionSuggestion() {
+    final suggestion = _descriptionSuggestion?.trim();
+    if (suggestion == null || suggestion.isEmpty) return;
+    _descriptionController.text = suggestion;
+    _descriptionController.selection = TextSelection.collapsed(
+      offset: suggestion.length,
+    );
+    setState(() => _descriptionSuggestion = null);
   }
 
   @override
@@ -109,11 +146,43 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                   controller: _descriptionController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: 'Görev açıklamasını girin',
+                    hintText: _descriptionSuggestion ?? 'Görev açıklamasını girin',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
+                  onChanged: (value) {
+                    if (value.trim().isNotEmpty && _descriptionSuggestion != null) {
+                      setState(() => _descriptionSuggestion = null);
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: _descriptionController.text.trim().isEmpty &&
+                              !_isSuggestionLoading
+                          ? _fetchDescriptionSuggestion
+                          : null,
+                      icon: _isSuggestionLoading
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.auto_awesome, size: 18),
+                      label: const Text('Öneri al'),
+                    ),
+                    TextButton(
+                      onPressed: _descriptionSuggestion != null &&
+                              _descriptionController.text.trim().isEmpty
+                          ? _applyDescriptionSuggestion
+                          : null,
+                      child: const Text('Öneriyi uygula'),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
 

@@ -4,6 +4,7 @@ import 'package:Assist/data/models/ai_recommendation.dart';
 import 'package:Assist/domain/use_cases/task_use_cases.dart';
 import 'package:Assist/data/repositories/task_repository.dart';
 import 'package:Assist/services/database_service.dart';
+import 'package:Assist/services/ai_service.dart';
 
 class HomeViewModel extends ChangeNotifier {
   final GetTasksUseCase? _getTasksUseCase;
@@ -11,6 +12,7 @@ class HomeViewModel extends ChangeNotifier {
   final ToggleTaskCompletionUseCase? _toggleTaskCompletionUseCase;
   final GetUpcomingTasksUseCase? _getUpcomingTasksUseCase;
   final DatabaseService? _databaseService;
+  final AIService? _aiService;
 
   List<Task> _tasks = [];
   List<Task> get tasks => _tasks;
@@ -34,11 +36,13 @@ class HomeViewModel extends ChangeNotifier {
     ToggleTaskCompletionUseCase? toggleTaskCompletionUseCase,
     GetUpcomingTasksUseCase? getUpcomingTasksUseCase,
     DatabaseService? databaseService,
+    AIService? aiService,
   }) : _getTasksUseCase = getTasksUseCase,
         _addTaskUseCase = addTaskUseCase,
         _toggleTaskCompletionUseCase = toggleTaskCompletionUseCase,
         _getUpcomingTasksUseCase = getUpcomingTasksUseCase,
-        _databaseService = databaseService {
+        _databaseService = databaseService,
+        _aiService = aiService {
     _loadInitialData();
   }
 
@@ -46,7 +50,6 @@ class HomeViewModel extends ChangeNotifier {
 
   Future<void> _loadInitialData() async {
     await loadTasks();
-    _loadRecommendations();
   }
 
   Future<void> loadTasks() async {
@@ -103,6 +106,8 @@ class HomeViewModel extends ChangeNotifier {
       } else {
         _upcomingTasks = _tasks.where((task) => !task.isCompleted).toList();
       }
+
+      await _loadRecommendations(notify: false);
     } catch (e) {
       _error = 'Görevler yüklenirken bir hata oluştu: $e';
       // Fallback to mock data on error
@@ -140,8 +145,24 @@ class HomeViewModel extends ChangeNotifier {
     ];
   }
 
-  void _loadRecommendations() {
-    _recommendations = [
+  Future<void> _loadRecommendations({bool notify = true}) async {
+    try {
+      if (_aiService != null) {
+        _recommendations = await _aiService!.fetchRecommendations(_tasks);
+      } else {
+        _recommendations = _getMockRecommendations();
+      }
+    } catch (_) {
+      _recommendations = _getMockRecommendations();
+    }
+
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  List<AIRecommendation> _getMockRecommendations() {
+    return [
       AIRecommendation(
         id: '1',
         title: 'Toplantıdan önce kahve molası ekle',
@@ -167,7 +188,6 @@ class HomeViewModel extends ChangeNotifier {
         createdAt: DateTime.now(),
       ),
     ];
-    notifyListeners();
   }
 
   int get pendingTasksCount =>
@@ -178,7 +198,18 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (_addTaskUseCase != null) {
+      if (_databaseService != null) {
+        await _databaseService!.insertTask({
+          'title': task.title,
+          'description': task.description,
+          'dueDate': task.date.toIso8601String(),
+          'category': task.category ?? 'Diğer',
+          'completed': task.isCompleted ? 1 : 0,
+          'important': task.isImportant ? 1 : 0,
+          'createdAt': task.createdAt.toIso8601String(),
+          'updatedAt': (task.updatedAt ?? DateTime.now()).toIso8601String(),
+        });
+      } else if (_addTaskUseCase != null) {
         await _addTaskUseCase!.execute(task);
       }
       await loadTasks(); // Refresh tasks
