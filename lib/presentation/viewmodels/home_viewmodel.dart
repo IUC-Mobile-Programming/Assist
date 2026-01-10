@@ -5,6 +5,7 @@ import 'package:Assist/domain/use_cases/task_use_cases.dart';
 import 'package:Assist/data/repositories/task_repository.dart';
 import 'package:Assist/services/database_service.dart';
 import 'package:Assist/services/ai_service.dart';
+import 'package:Assist/injection_container.dart';
 
 class HomeViewModel extends ChangeNotifier {
   final GetTasksUseCase? _getTasksUseCase;
@@ -75,7 +76,7 @@ class HomeViewModel extends ChangeNotifier {
               description: taskMap['description'] ?? '',
               isCompleted: (taskMap['completed'] ?? 0) == 1,
               isImportant: (taskMap['important'] ?? 0) == 1,
-              category: taskMap['category'] ?? 'Diğer',
+              category: _toLocalizedCategory(taskMap['category']),
             );
             _tasks.add(task);
           } catch (taskError) {
@@ -117,6 +118,49 @@ class HomeViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  // Convert DB category code (english identifiers) to localized display string
+  String _toLocalizedCategory(dynamic raw) {
+    final code = (raw ?? 'other').toString().toLowerCase();
+    final loc = ServiceLocator().localizationService;
+    switch (code) {
+      case 'work':
+        return loc.categoryWork;
+      case 'personal':
+        return loc.categoryPersonal;
+      case 'shopping':
+        return loc.categoryShopping;
+      case 'health':
+        return loc.categoryHealth;
+      case 'other':
+        return loc.categoryOther;
+      default:
+        return loc.categoryOther;
+    }
+  }
+
+  // Convert a display category (possibly localized) to english DB code
+  String _toEnglishCategory(String? display) {
+    if (display == null || display.isEmpty) return 'other';
+    final d = display.toLowerCase();
+    final loc = ServiceLocator().localizationService;
+    // Match against english codes first
+    switch (d) {
+      case 'work':
+      case 'personal':
+      case 'shopping':
+      case 'health':
+      case 'other':
+        return d;
+    }
+    // Then match against localized labels
+    if (display == loc.categoryWork) return 'work';
+    if (display == loc.categoryPersonal) return 'personal';
+    if (display == loc.categoryShopping) return 'shopping';
+    if (display == loc.categoryHealth) return 'health';
+    if (display == loc.categoryOther) return 'other';
+    return 'other';
   }
 
   List<Task> _getMockTasks() {
@@ -203,7 +247,7 @@ class HomeViewModel extends ChangeNotifier {
           'title': task.title,
           'description': task.description,
           'dueDate': task.date.toIso8601String(),
-          'category': task.category ?? 'Diğer',
+          'category': _toEnglishCategory(task.category),
           'completed': task.isCompleted ? 1 : 0,
           'important': task.isImportant ? 1 : 0,
           'createdAt': task.createdAt.toIso8601String(),

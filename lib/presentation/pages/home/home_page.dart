@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Assist/data/models/task.dart';
@@ -8,6 +7,7 @@ import 'package:Assist/presentation/widgets/task_item.dart';
 import 'package:Assist/presentation/widgets/recommendation_item.dart';
 import 'package:Assist/core/app_theme.dart';
 import 'package:Assist/injection_container.dart';
+import 'package:Assist/services/localization_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -86,10 +86,11 @@ class HomePageState extends State<HomePage> {
   }
 
   void _toggleListening() {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     setState(() {
       _isListening = !_isListening;
       if (_isListening) {
-        _voiceController.text = 'Dinleniyor...';
+        _voiceController.text = localization.listening;
       }
     });
   }
@@ -215,6 +216,7 @@ class _HomeContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localization = Provider.of<LocalizationService>(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return SingleChildScrollView(
@@ -223,22 +225,22 @@ class _HomeContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildWelcomeSection(isDarkMode),
+            _buildWelcomeSection(localization, isDarkMode),
             const SizedBox(height: 20),
-            _buildQuickActions(context, theme, isDarkMode),
+            _buildQuickActions(context, localization, theme, isDarkMode),
             const SizedBox(height: 24),
-            _buildUpcomingTasks(context, theme, isDarkMode),
+            _buildUpcomingTasks(context, localization, theme, isDarkMode),
             const SizedBox(height: 24),
-            _buildAIRecommendations(theme, isDarkMode),
+            _buildAIRecommendations(localization, theme, isDarkMode),
             const SizedBox(height: 24),
-            _buildVoiceCommandSection(context, theme, isDarkMode),
+            _buildVoiceCommandSection(context, localization, theme, isDarkMode),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildWelcomeSection(bool isDarkMode) {
+  Widget _buildWelcomeSection(LocalizationService localization, bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -265,9 +267,9 @@ class _HomeContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Hoş Geldiniz!',
-                  style: TextStyle(
+                Text(
+                  localization.welcome,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -275,7 +277,7 @@ class _HomeContent extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${viewModel.pendingTasksCount} bekleyen göreviniz var',
+                  '${viewModel.pendingTasksCount} ${localization.pendingTasks}',
                   style: const TextStyle(
                     color: Color.fromRGBO(255, 255, 255, 0.9),
                     fontSize: 14,
@@ -289,12 +291,12 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context, ThemeData theme, bool isDarkMode) {
+  Widget _buildQuickActions(BuildContext context, LocalizationService localization, ThemeData theme, bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Hızlı Erişim',
+          localization.quickAccess,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -306,7 +308,7 @@ class _HomeContent extends StatelessWidget {
             _buildQuickActionButton(
               context: context,
               icon: Icons.calendar_today,
-              label: 'Takvim',
+              label: localization.calendar,
               onTap: () {
                 // Navigate to calendar
               },
@@ -316,7 +318,7 @@ class _HomeContent extends StatelessWidget {
             _buildQuickActionButton(
               context: context,
               icon: Icons.settings,
-              label: 'Ayarlar',
+              label: localization.settings,
               onTap: () {
                 // Navigate to settings
               },
@@ -365,7 +367,7 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildUpcomingTasks(BuildContext context, ThemeData theme, bool isDarkMode) {
+  Widget _buildUpcomingTasks(BuildContext context, LocalizationService localization, ThemeData theme, bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -377,7 +379,7 @@ class _HomeContent extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'Yaklaşan Görevler',
+              localization.upcomingTasks,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -388,14 +390,14 @@ class _HomeContent extends StatelessWidget {
         ...viewModel.upcomingTasks.map((task) =>
             TaskItem(
               task: task,
-              onToggle: () => _confirmToggle(context, task),
+              onToggle: () => _confirmToggle(context, localization, task),
             ),
         ),
       ],
     );
   }
 
-  Widget _buildAIRecommendations(ThemeData theme, bool isDarkMode) {
+  Widget _buildAIRecommendations(LocalizationService localization, ThemeData theme, bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -407,7 +409,7 @@ class _HomeContent extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'ASSIST AI Önerileri',
+              localization.aiRecommendations,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -425,7 +427,7 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildVoiceCommandSection(BuildContext context, ThemeData theme, bool isDarkMode) {
+  Widget _buildVoiceCommandSection(BuildContext context, LocalizationService localization, ThemeData theme, bool isDarkMode) {
     const inputPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 14);
     final hasInput = voiceController.text.trim().isNotEmpty;
     final suggestion = assistantSuggestion?.trim();
@@ -447,15 +449,15 @@ class _HomeContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "ASSIST AI'a Komut Ver",
+            localization.giveCommand,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Sesli veya yazılı olarak görev ekleyin',
-            style: TextStyle(fontSize: 14),
+          Text(
+            localization.voiceCommandHint,
+            style: const TextStyle(fontSize: 14),
           ),
           const SizedBox(height: 12),
           Row(
@@ -511,7 +513,7 @@ class _HomeContent extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 ),
                 onPressed: onSendCommand,
-                child: const Text('Gönder', style: TextStyle(color: Colors.white)),
+                child: Text(localization.send, style: const TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -520,7 +522,7 @@ class _HomeContent extends StatelessWidget {
             child: TextButton.icon(
               onPressed: showSuggestion ? onApplySuggestion : null,
               icon: const Icon(Icons.check),
-              label: const Text('Tamamla'),
+              label: Text(localization.finalize),
             ),
           ),
           if (isSuggesting)
@@ -533,29 +535,29 @@ class _HomeContent extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 8),
-          const Text(
-            'Örnek: "Yarın saat 15:00\'te toplantı ekle"',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+          Text(
+            localization.exampleCommand,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _confirmToggle(BuildContext context, dynamic task) async {
+  Future<void> _confirmToggle(BuildContext context, LocalizationService localization, dynamic task) async {
     final shouldToggle = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Görevi Tamamla?'),
-        content: Text('"${task.title}" görevini tamamlandı olarak işaretlemek istiyor musunuz?'),
+        title: Text(localization.completeTask),
+        content: Text('"${task.title}" ${localization.completeTaskConfirmation}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('İptal'),
+            child: Text(localization.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Onayla'),
+            child: Text(localization.confirm),
           ),
         ],
       ),

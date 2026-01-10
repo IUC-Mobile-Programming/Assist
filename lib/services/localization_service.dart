@@ -215,6 +215,12 @@ class LocalizationService extends ChangeNotifier {
         ? 'İptal'
         : 'Cancel';
   }
+  
+  String get confirm {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Onayla'
+        : 'Confirm';
+  }
 
   String get eventTitle {
     return _currentLanguage == AppLanguage.turkish
@@ -275,6 +281,181 @@ class LocalizationService extends ChangeNotifier {
     return _currentLanguage == AppLanguage.turkish
         ? 'etkinliği eklendi'
         : 'event added';
+  }
+
+  String get finalize {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Tamamla'
+        : 'Finalize';
+  }
+
+  String get completeTask {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Görevi Tamamla?'
+        : 'Complete Task?';
+  }
+
+  String get completeTaskConfirmation {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Görevi tamamlamak istediğinize emin misiniz?'
+        : 'Are you sure you want to complete the task?';
+  }
+
+  // Add Task Form Texts
+  String get addNewTask {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Yeni Görev Ekle'
+        : 'Add New Task';
+  }
+
+  String get title {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Başlık'
+        : 'Title';
+  }
+
+  String get enterTaskTitle {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Görev başlığını girin'
+        : 'Enter task title';
+  }
+
+  String get description {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Açıklama'
+        : 'Description';
+  }
+
+  String get enterTaskDescription {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Görev açıklamasını girin'
+        : 'Enter task description';
+  }
+
+  String get getSuggestion {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Öneri al'
+        : 'Get suggestion';
+  }
+
+  String get applySuggestion {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Öneriyi uygula'
+        : 'Apply suggestion';
+  }
+
+  String get dateAndTime {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Tarih ve Saat'
+        : 'Date and Time';
+  }
+
+  String get selectDate {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Tarih seçin'
+        : 'Select date';
+  }
+
+  String get selectTime {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Saat seçin'
+        : 'Select time';
+  }
+
+  String get category {
+    return _currentLanguage == AppLanguage.turkish 
+        ? 'Kategori' 
+        : 'Category';
+  }
+
+  String get categoryWork {
+    return _currentLanguage == AppLanguage.turkish 
+        ? 'İş' 
+        : 'Work';
+  }
+
+  String get categoryPersonal {
+    return _currentLanguage == AppLanguage.turkish 
+        ? 'Kişisel' 
+        : 'Personal';
+  }
+
+  String get categoryShopping {
+    return _currentLanguage == AppLanguage.turkish 
+        ? 'Alışveriş' 
+        : 'Shopping';
+  }
+
+  String get categoryHealth {
+    return _currentLanguage == AppLanguage.turkish 
+        ? 'Sağlık' 
+        : 'Health';
+  }
+
+  String get categoryOther {
+    return _currentLanguage == AppLanguage.turkish 
+        ? 'Diğer' 
+        : 'Other';
+  }
+
+  String get markAsImportant {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Önemli olarak işaretle'
+        : 'Mark as important';
+  }
+
+  String get addTask {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Görev Ekle'
+        : 'Add Task';
+  }
+
+  String get ok {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Tamam'
+        : 'OK';
+  }
+
+  String get other {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Diğer'
+        : 'Other';
+  }
+
+  String get enterTitle {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Lütfen bir başlık girin'
+        : 'Please enter a title';
+  }
+
+  String get selectDueDate {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Lütfen bir bitiş tarihi seçin'
+        : 'Please select a due date';
+  }
+
+  String get selectDueTime {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Lütfen bir bitiş saati seçin'
+        : 'Please select a due time';
+  }
+
+  String get taskAddedSuccessfully {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Görev başarıyla eklendi!'
+        : 'Task added successfully!';
+  }
+
+  String get home {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Ana Ekran'
+        : 'Home';
+  }
+
+  String get changeTheme {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Tema Değiştir'
+        : 'Change Theme';
   }
 
   // Date formatting

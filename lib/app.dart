@@ -47,6 +47,7 @@ class _AppState extends State<App> {
 
   Widget _buildDrawer(BuildContext context) {
     final themeService = Provider.of<ThemeService>(context);
+    final localization = Provider.of<LocalizationService>(context);
 
     return Drawer(
       child: ListView(
@@ -55,7 +56,7 @@ class _AppState extends State<App> {
           _buildDrawerHeader(context),
           ListTile(
             leading: const Icon(Icons.dashboard),
-            title: const Text('Ana Ekran'),
+            title: Text(localization.home),
             onTap: () {
               setState(() => _currentPageIndex = 0);
               Navigator.pop(context);
@@ -63,7 +64,7 @@ class _AppState extends State<App> {
           ),
           ListTile(
             leading: const Icon(Icons.calendar_today),
-            title: const Text('Takvim'),
+            title: Text(localization.calendar),
             onTap: () {
               setState(() => _currentPageIndex = 1);
               Navigator.pop(context);
@@ -71,7 +72,7 @@ class _AppState extends State<App> {
           ),
           ListTile(
             leading: Icon(themeService.isDarkMode ? Icons.light_mode : Icons.dark_mode),
-            title: const Text('Tema Değiştir'),
+            title: Text(localization.changeTheme),
             trailing: Switch(
               value: themeService.isDarkMode,
               onChanged: (_) => themeService.toggleTheme(),
@@ -80,7 +81,7 @@ class _AppState extends State<App> {
           ),
           ListTile(
             leading: const Icon(Icons.settings),
-            title: const Text('Ayarlar'),
+            title: Text(localization.settings),
             onTap: () {
               setState(() => _currentPageIndex = 2);
               Navigator.pop(context);
@@ -128,7 +129,11 @@ class _AppState extends State<App> {
 
   AppBar _buildAppBar(BuildContext context, LocalizationService localizationService) {
     final themeService = Provider.of<ThemeService>(context);
-    final titles = ['ASSIST AI', 'Takvim', 'Ayarlar'];
+    final titles = [
+      localizationService.appTitle,
+      localizationService.calendar,
+      localizationService.settings
+    ];
 
     return AppBar(
       title: Text(titles[_currentPageIndex]),

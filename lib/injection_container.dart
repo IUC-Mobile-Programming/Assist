@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:Assist/data/repositories/task_repository.dart';
 import 'package:Assist/data/repositories/calendar_repository.dart';
 import 'package:Assist/data/repositories/mocks/task_repository_mock.dart';
@@ -47,7 +49,13 @@ class ServiceLocator {
     _taskRepository = InMemoryTaskRepository();
     _calendarRepository = InMemoryCalendarRepository();
     // Services - register lightweight/in-memory defaults
-    _aiService = OllamaAIService();
+    final ollamaBaseUrl = Platform.isAndroid
+        ? 'http://10.0.2.2:11434' // Android emulator loopback to host
+        : 'http://127.0.0.1:11434';
+    _aiService = OllamaAIService(
+      baseUrl: ollamaBaseUrl,
+      model: 'llama3.1',
+    );
     _databaseService = DatabaseService();
     _notificationService = InMemoryNotificationService();
 

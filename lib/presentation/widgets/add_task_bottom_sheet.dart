@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Assist/services/database_service.dart';
+import 'package:Assist/services/localization_service.dart';
 import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
 import 'package:Assist/injection_container.dart';
 
@@ -16,10 +17,20 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
   final _descriptionController = TextEditingController();
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  String _selectedCategory = 'Diğer';
+  String _selectedCategory = 'other';
   bool _isImportant = false;
   String? _descriptionSuggestion;
   bool _isSuggestionLoading = false;
+
+  final _categoryMap = {
+    'work': (LocalizationService loc) => loc.categoryWork,
+    'personal': (LocalizationService loc) => loc.categoryPersonal,
+    'shopping': (LocalizationService loc) => loc.categoryShopping,
+    'health': (LocalizationService loc) => loc.categoryHealth,
+    'other': (LocalizationService loc) => loc.categoryOther,
+  };
+
+  List<String> get _categoryKeys => _categoryMap.keys.toList();
 
   void _showFloatingSnack(BuildContext context, String message) {
     showDialog(
@@ -29,7 +40,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Tamam'),
+            child: Text(Provider.of<LocalizationService>(context, listen: false).ok),
           ),
         ],
       ),
@@ -79,6 +90,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
       minChildSize: 0.5,
@@ -116,9 +128,9 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Yeni Görev Ekle',
-                  style: TextStyle(
+                Text(
+                  localization.addNewTask,
+                  style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -126,12 +138,12 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 const SizedBox(height: 20),
 
                 // Başlık
-                const Text('Başlık', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(localization.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _titleController,
                   decoration: InputDecoration(
-                    hintText: 'Görev başlığını girin',
+                    hintText: localization.enterTaskTitle,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -140,13 +152,13 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 const SizedBox(height: 16),
 
                 // Açıklama
-                const Text('Açıklama', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(localization.description, style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _descriptionController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: _descriptionSuggestion ?? 'Görev açıklamasını girin',
+                    hintText: _descriptionSuggestion ?? localization.enterTaskDescription,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -173,21 +185,21 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.auto_awesome, size: 18),
-                      label: const Text('Öneri al'),
+                      label: Text(localization.getSuggestion),
                     ),
                     TextButton(
                       onPressed: _descriptionSuggestion != null &&
                               _descriptionController.text.trim().isEmpty
                           ? _applyDescriptionSuggestion
                           : null,
-                      child: const Text('Öneriyi uygula'),
+                      child: Text(localization.applySuggestion),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
                 // Tarih ve Saat
-                const Text('Tarih ve Saat', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(localization.dateAndTime, style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -213,7 +225,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                           child: Text(
                             _selectedDate != null
                                 ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                                : 'Tarih seçin',
+                                : localization.selectDate,
                             style: TextStyle(
                               color: _selectedDate != null ? Colors.black : Colors.grey,
                             ),
@@ -242,7 +254,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                           child: Text(
                             _selectedTime != null
                                 ? _selectedTime!.format(context)
-                                : 'Saat seçin',
+                                : localization.selectTime,
                             style: TextStyle(
                               color: _selectedTime != null ? Colors.black : Colors.grey,
                             ),
@@ -255,19 +267,20 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 const SizedBox(height: 16),
 
                 // Görev Kategorisi
-                const Text('Kategori', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(localization.category, style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 DropdownButton<String>(
                   value: _selectedCategory,
                   isExpanded: true,
-                  items: ['İş', 'Kişisel', 'Alışveriş', 'Sağlık', 'Diğer']
-                      .map((category) => DropdownMenuItem(
-                            value: category,
-                            child: Text(category),
+                  items: _categoryKeys
+                      .map((categoryKey) => DropdownMenuItem(
+                            value: categoryKey,
+                            child:
+                                Text(_categoryMap[categoryKey]!(localization)),
                           ))
                       .toList(),
                   onChanged: (value) {
-                    setState(() => _selectedCategory = value ?? 'Diğer');
+                    setState(() => _selectedCategory = value ?? 'other');
                   },
                 ),
                 const SizedBox(height: 16),
@@ -281,9 +294,9 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                         setState(() => _isImportant = value ?? false);
                       },
                     ),
-                    const Text(
-                      'Önemli olarak işaretle',
-                      style: TextStyle(fontSize: 16),
+                    Text(
+                      localization.markAsImportant,
+                      style: const TextStyle(fontSize: 16),
                     ),
                   ],
                 ),
@@ -303,17 +316,17 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                     onPressed: () async {
                       // Validation
                       if (_titleController.text.isEmpty) {
-                        _showFloatingSnack(context, 'Lütfen bir başlık girin');
+                        _showFloatingSnack(context, localization.enterTitle);
                         return;
                       }
 
                       if (_selectedDate == null) {
-                        _showFloatingSnack(context, 'Lütfen bir bitiş tarihi seçin');
+                        _showFloatingSnack(context, localization.selectDueDate);
                         return;
                       }
 
                       if (_selectedTime == null) {
-                        _showFloatingSnack(context, 'Lütfen bir bitiş saati seçin');
+                        _showFloatingSnack(context, localization.selectDueTime);
                         return;
                       }
 
@@ -356,16 +369,16 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                       final messenger = ScaffoldMessenger.of(context);
                       Navigator.pop(context);
                       messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Görev başarıyla eklendi!'),
+                        SnackBar(
+                          content: Text(localization.taskAddedSuccessfully),
                           behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         ),
                       );
                     },
-                    child: const Text(
-                      'Add Task',
-                      style: TextStyle(
+                    child: Text(
+                      localization.addTask,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
