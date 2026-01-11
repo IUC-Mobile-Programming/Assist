@@ -87,6 +87,8 @@ class ServiceLocator {
       getEventsUseCase: _getEventsUseCase,
       addEventUseCase: _addEventUseCase,
       getEventsForDateUseCase: _getEventsForDateUseCase,
+      localizationService: _localizationService,
+      databaseService: _databaseService,
     );
 
     _settingsViewModel = SettingsViewModel(
@@ -102,12 +104,15 @@ class ServiceLocator {
   // Use Cases
   GetTasksUseCase get getTasksUseCase => _getTasksUseCase;
   AddTaskUseCase get addTaskUseCase => _addTaskUseCase;
-  ToggleTaskCompletionUseCase get toggleTaskCompletionUseCase => _toggleTaskCompletionUseCase;
-  GetUpcomingTasksUseCase get getUpcomingTasksUseCase => _getUpcomingTasksUseCase;
+  ToggleTaskCompletionUseCase get toggleTaskCompletionUseCase =>
+      _toggleTaskCompletionUseCase;
+  GetUpcomingTasksUseCase get getUpcomingTasksUseCase =>
+      _getUpcomingTasksUseCase;
 
   GetEventsUseCase get getEventsUseCase => _getEventsUseCase;
   AddEventUseCase get addEventUseCase => _addEventUseCase;
-  GetEventsForDateUseCase get getEventsForDateUseCase => _getEventsForDateUseCase;
+  GetEventsForDateUseCase get getEventsForDateUseCase =>
+      _getEventsForDateUseCase;
 
   // Services
   LocalizationService get localizationService => _localizationService;

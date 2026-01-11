@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:Assist/data/models/calendar_event.dart';
 import 'package:Assist/domain/use_cases/calendar_use_cases.dart';
+import 'package:Assist/services/localization_service.dart';
+import 'package:Assist/services/database_service.dart';
 
 enum CalendarViewMode { month, week }
 
@@ -8,6 +10,8 @@ class CalendarViewModel extends ChangeNotifier {
   final GetEventsUseCase _getEventsUseCase;
   final AddEventUseCase _addEventUseCase;
   final GetEventsForDateUseCase _getEventsForDateUseCase;
+  final LocalizationService _localizationService;
+  final DatabaseService _databaseService;
 
   Map<DateTime, List<CalendarEvent>> _events = {};
   Map<DateTime, List<CalendarEvent>> get events => _events;
@@ -28,9 +32,13 @@ class CalendarViewModel extends ChangeNotifier {
     required GetEventsUseCase getEventsUseCase,
     required AddEventUseCase addEventUseCase,
     required GetEventsForDateUseCase getEventsForDateUseCase,
-  }) : _getEventsUseCase = getEventsUseCase,
+    required LocalizationService localizationService,
+    required DatabaseService databaseService,
+  })  : _getEventsUseCase = getEventsUseCase,
         _addEventUseCase = addEventUseCase,
-        _getEventsForDateUseCase = getEventsForDateUseCase {
+        _getEventsForDateUseCase = getEventsForDateUseCase,
+        _localizationService = localizationService,
+        _databaseService = databaseService {
     loadEvents();
   }
 
@@ -103,21 +111,45 @@ class CalendarViewModel extends ChangeNotifier {
   }
 
   String getWeekRange() {
-    final startOfWeek = _currentDate.subtract(Duration(days: _currentDate.weekday - 1));
+    final startOfWeek =
+        _currentDate.subtract(Duration(days: _currentDate.weekday - 1));
     final endOfWeek = startOfWeek.add(const Duration(days: 6));
-    return '${startOfWeek.day} ${_getMonthName(startOfWeek.month)} - ${endOfWeek.day} ${_getMonthName(endOfWeek.month)} ${endOfWeek.year}';
-  }
-
-  String _getMonthName(int month) {
-    const months = [
-      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
-    ];
-    return months[month - 1];
+    return '${startOfWeek.day} ${_localizationService.getMonthName(startOfWeek.month)} - ${endOfWeek.day} ${_localizationService.getMonthName(endOfWeek.month)} ${endOfWeek.year}';
   }
 
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  Future<Map<int, int>> getTaskCountsForMonth() async {
+    try {
+      final taskMaps = await _databaseService.getTasks();
+      final taskCounts = <int, int>{};
+
+      for (var taskMap in taskMaps) {
+        final dueDateStr = taskMap['dueDate'] as String?;
+        final completed = (taskMap['completed'] as int?) ?? 0;
+
+        if (dueDateStr != null && completed == 0) {
+          try {
+            final dueDate = DateTime.parse(dueDateStr);
+            if (dueDate.year == _currentDate.year &&
+                dueDate.month == _currentDate.month) {
+              final day = dueDate.day;
+              taskCounts[day] = (taskCounts[day] ?? 0) + 1;
+            }
+          } catch (e) {
+            // Skip invalid date formats
+          }
+        }
+      }
+
+      return taskCounts;
+    } catch (e) {
+      _error = 'Görevler yüklenirken bir hata oluştu: $e';
+      notifyListeners();
+      return {};
+    }
   }
 }

@@ -68,12 +68,12 @@ class _CalendarGridState extends State<CalendarGrid> {
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(8),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
                   color: Color.fromRGBO(0, 0, 0, 0.2),
                   blurRadius: 8,
                   spreadRadius: 2,
-                  offset: const Offset(0, 4),
+                  offset: Offset(0, 4),
                 ),
               ],
             ),
@@ -83,7 +83,11 @@ class _CalendarGridState extends State<CalendarGrid> {
                 _showAddEventDialog(context, date);
               },
               icon: const Icon(Icons.add, size: 20),
-              label: const Text('Etkinlik Ekle', style: TextStyle(fontSize: 12)),
+              label: Text(
+                Provider.of<LocalizationService>(context, listen: false)
+                    .addEvent,
+                style: const TextStyle(fontSize: 12),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
@@ -102,32 +106,26 @@ class _CalendarGridState extends State<CalendarGrid> {
   }
 
   void _showAddEventDialog(BuildContext context, DateTime date) {
+    final localizationService =
+        Provider.of<LocalizationService>(context, listen: false);
     // TODO: Implement add event dialog with ViewModel integration
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Etkinlik Ekle'),
-        content: Text('Etkinlik ekleme dialogu için ${date.day}.${date.month}.${date.year}'),
+        title: Text(localizationService.addEvent),
+        content: Text(
+            'Etkinlik ekleme dialogu için ${date.day}.${date.month}.${date.year}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
+            child: Text(localizationService.cancel),
           ),
           ElevatedButton(
             onPressed: () {
-              // Add event using ViewModel
-              final newEvent = CalendarEvent(
-                title: 'Yeni Etkinlik',
-                description: 'Açıklama',
-                startTime: const TimeOfDay(hour: 14, minute: 30),
-                endTime: const TimeOfDay(hour: 15, minute: 30),
-                date: date,
-                color: Colors.blue,
-              );
-              widget.viewModel.addEvent(newEvent);
+              // TODO Add event using ViewModel
               Navigator.pop(context);
             },
-            child: const Text('Ekle'),
+            child: Text(localizationService.save),
           ),
         ],
       ),
@@ -150,8 +148,10 @@ class _CalendarGridState extends State<CalendarGrid> {
   Widget _buildMonthView(BuildContext context) {
     final localizationService = Provider.of<LocalizationService>(context);
     final theme = Theme.of(context);
-    final firstDay = DateTime(widget.viewModel.currentDate.year, widget.viewModel.currentDate.month, 1);
-    final lastDay = DateTime(widget.viewModel.currentDate.year, widget.viewModel.currentDate.month + 1, 0);
+    final firstDay = DateTime(widget.viewModel.currentDate.year,
+        widget.viewModel.currentDate.month, 1);
+    final lastDay = DateTime(widget.viewModel.currentDate.year,
+        widget.viewModel.currentDate.month + 1, 0);
     final startingWeekday = firstDay.weekday;
     final totalDays = lastDay.day;
     final totalWeeks = ((startingWeekday + totalDays - 1) / 7).ceil();
@@ -161,27 +161,39 @@ class _CalendarGridState extends State<CalendarGrid> {
         _buildMonthDayHeaders(localizationService, theme),
         const SizedBox(height: 8),
         Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              childAspectRatio: 1.2,
-              mainAxisSpacing: 4,
-              crossAxisSpacing: 4,
-            ),
-            itemCount: totalWeeks * 7,
-            itemBuilder: (context, index) {
-              final dayOffset = index - (startingWeekday - 1);
-              final isCurrentMonth = dayOffset >= 0 && dayOffset < totalDays;
-              final day = isCurrentMonth ? dayOffset + 1 : null;
-              final dayDate = isCurrentMonth
-                  ? DateTime(widget.viewModel.currentDate.year, widget.viewModel.currentDate.month, day!)
-                  : null;
+          child: FutureBuilder<Map<int, int>>(
+            future: widget.viewModel.getTaskCountsForMonth(),
+            builder: (context, snapshot) {
+              final taskCounts = snapshot.data ?? {};
 
-              return _buildDayCell(
-                day: day,
-                dayDate: dayDate,
-                theme: theme,
+              return GridView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  childAspectRatio: 1.2,
+                  mainAxisSpacing: 4,
+                  crossAxisSpacing: 4,
+                ),
+                itemCount: totalWeeks * 7,
+                itemBuilder: (context, index) {
+                  final dayOffset = index - (startingWeekday - 1);
+                  final isCurrentMonth =
+                      dayOffset >= 0 && dayOffset < totalDays;
+                  final day = isCurrentMonth ? dayOffset + 1 : null;
+                  final dayDate = isCurrentMonth
+                      ? DateTime(widget.viewModel.currentDate.year,
+                          widget.viewModel.currentDate.month, day!)
+                      : null;
+                  final taskCount = day != null ? (taskCounts[day] ?? 0) : 0;
+
+                  return _buildDayCell(
+                    day: day,
+                    dayDate: dayDate,
+                    theme: theme,
+                    localizationService: localizationService,
+                    taskCount: taskCount,
+                  );
+                },
               );
             },
           ),
@@ -190,12 +202,14 @@ class _CalendarGridState extends State<CalendarGrid> {
     );
   }
 
-  Widget _buildMonthDayHeaders(LocalizationService localizationService, ThemeData theme) {
+  Widget _buildMonthDayHeaders(
+      LocalizationService localizationService, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         children: List.generate(7, (index) {
-          final dayName = localizationService.getDayName(index + 1, short: true);
+          final dayName =
+              localizationService.getDayName(index + 1, short: true);
           final isWeekend = index >= 5;
 
           return Expanded(
@@ -206,7 +220,9 @@ class _CalendarGridState extends State<CalendarGrid> {
                 dayName,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: isWeekend ? Colors.red : theme.textTheme.bodyMedium?.color,
+                  color: isWeekend
+                      ? Colors.red
+                      : theme.textTheme.bodyMedium?.color,
                 ),
               ),
             ),
@@ -220,6 +236,8 @@ class _CalendarGridState extends State<CalendarGrid> {
     required int? day,
     required DateTime? dayDate,
     required ThemeData theme,
+    required LocalizationService localizationService,
+    required int taskCount,
   }) {
     if (day == null) {
       return Container();
@@ -230,74 +248,44 @@ class _CalendarGridState extends State<CalendarGrid> {
         dayDate.month == DateTime.now().month &&
         dayDate.day == DateTime.now().day;
 
-    // Get events for this day
-    final eventsForDay = widget.viewModel.events[DateTime(dayDate!.year, dayDate.month, dayDate.day)] ?? [];
-
-    return GestureDetector(
-      onTapDown: (details) => _startLongPressTimer(dayDate, details.globalPosition),
-      onTapUp: (_) => _cancelLongPress(),
-      onTapCancel: _cancelLongPress,
-      child: Container(
-        margin: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          color: isToday ? theme.primaryColor.withAlpha((0.2 * 255).round()) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isToday ? theme.primaryColor : Colors.transparent,
-            width: 2,
-          ),
+    return Container(
+      margin: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: isToday
+            ? theme.primaryColor.withAlpha((0.2 * 255).round())
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isToday ? theme.primaryColor : Colors.transparent,
+          width: 2,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: Text(
-                day.toString(),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                  color: isToday ? theme.primaryColor : theme.textTheme.bodyMedium?.color,
-                ),
-              ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            day.toString(),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+              color: isToday
+                  ? theme.primaryColor
+                  : theme.textTheme.bodyMedium?.color,
             ),
-            if (eventsForDay.isNotEmpty) ...[
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: eventsForDay.length > 2 ? 2 : eventsForDay.length,
-                  itemBuilder: (context, index) {
-                    final event = eventsForDay[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      child: Container(
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: event.color,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+          ),
+          if (taskCount > 0) ...[
+            const SizedBox(height: 2),
+            Text(
+              '$taskCount ${localizationService.pendingTasks}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 9,
+                color: theme.primaryColor,
               ),
-              if (eventsForDay.length > 2)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4, bottom: 4),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '+${eventsForDay.length - 2}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: theme.textTheme.bodySmall?.color,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -305,7 +293,8 @@ class _CalendarGridState extends State<CalendarGrid> {
   Widget _buildWeekView(BuildContext context) {
     final localizationService = Provider.of<LocalizationService>(context);
     final theme = Theme.of(context);
-    final startOfWeek = widget.viewModel.currentDate.subtract(Duration(days: widget.viewModel.currentDate.weekday - 1));
+    final startOfWeek = widget.viewModel.currentDate
+        .subtract(Duration(days: widget.viewModel.currentDate.weekday - 1));
 
     return Column(
       children: [
@@ -318,13 +307,15 @@ class _CalendarGridState extends State<CalendarGrid> {
     );
   }
 
-  Widget _buildWeekDayHeaders(LocalizationService localizationService, ThemeData theme, DateTime startOfWeek) {
+  Widget _buildWeekDayHeaders(LocalizationService localizationService,
+      ThemeData theme, DateTime startOfWeek) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         children: List.generate(7, (index) {
           final dayDate = startOfWeek.add(Duration(days: index));
-          final dayName = localizationService.getDayName(dayDate.weekday, short: true);
+          final dayName =
+              localizationService.getDayName(dayDate.weekday, short: true);
           final isWeekend = dayDate.weekday >= 6;
           final isToday = dayDate.year == DateTime.now().year &&
               dayDate.month == DateTime.now().month &&
@@ -332,13 +323,16 @@ class _CalendarGridState extends State<CalendarGrid> {
 
           return Expanded(
             child: GestureDetector(
-              onTapDown: (details) => _startLongPressTimer(dayDate, details.globalPosition),
+              onTapDown: (details) =>
+                  _startLongPressTimer(dayDate, details.globalPosition),
               onTapUp: (_) => _cancelLongPress(),
               onTapCancel: _cancelLongPress,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: isToday ? theme.primaryColor.withAlpha((0.2 * 255).round()) : Colors.transparent,
+                  color: isToday
+                      ? theme.primaryColor.withAlpha((0.2 * 255).round())
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,
@@ -351,7 +345,9 @@ class _CalendarGridState extends State<CalendarGrid> {
                         fontWeight: FontWeight.bold,
                         color: isToday
                             ? theme.primaryColor
-                            : (isWeekend ? Colors.red : theme.textTheme.bodyMedium?.color),
+                            : (isWeekend
+                                ? Colors.red
+                                : theme.textTheme.bodyMedium?.color),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -359,7 +355,9 @@ class _CalendarGridState extends State<CalendarGrid> {
                       dayDate.day.toString(),
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: isToday ? theme.primaryColor : theme.textTheme.titleSmall?.color,
+                        color: isToday
+                            ? theme.primaryColor
+                            : theme.textTheme.titleSmall?.color,
                       ),
                     ),
                   ],
@@ -411,13 +409,16 @@ class _CalendarGridState extends State<CalendarGrid> {
                   decoration: BoxDecoration(
                     border: Border(
                       left: BorderSide(color: theme.dividerColor),
-                      right: dayIndex == 6 ? BorderSide(color: theme.dividerColor) : BorderSide.none,
+                      right: dayIndex == 6
+                          ? BorderSide(color: theme.dividerColor)
+                          : BorderSide.none,
                     ),
                   ),
                   child: Column(
                     children: List.generate(24, (hour) {
                       return GestureDetector(
-                        onTapDown: (details) => _startLongPressTimer(dayDate, details.globalPosition),
+                        onTapDown: (details) => _startLongPressTimer(
+                            dayDate, details.globalPosition),
                         onTapUp: (_) => _cancelLongPress(),
                         onTapCancel: _cancelLongPress,
                         child: Container(
