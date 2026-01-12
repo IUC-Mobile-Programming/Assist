@@ -108,22 +108,59 @@ class _CalendarGridState extends State<CalendarGrid> {
   void _showAddEventDialog(BuildContext context, DateTime date) {
     final localizationService =
         Provider.of<LocalizationService>(context, listen: false);
-    // TODO: Implement add event dialog with ViewModel integration
+    final taskNameController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(localizationService.addEvent),
-        content: Text(
-            'Etkinlik ekleme dialogu için ${date.day}.${date.month}.${date.year}'),
+        title: Text(localizationService.addQuickEvent),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${date.day}.${date.month}.${date.year} - ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: taskNameController,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: localizationService.title,
+                hintText: localizationService.enterTaskTitle,
+                border: const OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.done,
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(localizationService.cancel),
           ),
           ElevatedButton(
-            onPressed: () {
-              // TODO Add event using ViewModel
-              Navigator.pop(context);
+            onPressed: () async {
+              if (taskNameController.text.trim().isNotEmpty) {
+                final now = DateTime.now();
+                await widget.viewModel.databaseService.insertTask({
+                  'title': taskNameController.text.trim(),
+                  'dueDate': date.toIso8601String(),
+                  'description': '',
+                  'category': null,
+                  'completed': 0,
+                  'important': 0,
+                  'createdAt': now.toIso8601String(),
+                  'updatedAt': now.toIso8601String(),
+                });
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  // Refresh the UI by calling setState
+                  setState(() {});
+                }
+              }
             },
             child: Text(localizationService.save),
           ),
@@ -309,135 +346,250 @@ class _CalendarGridState extends State<CalendarGrid> {
 
   Widget _buildWeekDayHeaders(LocalizationService localizationService,
       ThemeData theme, DateTime startOfWeek) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+    return Container(
+      color: theme.cardColor,
       child: Row(
-        children: List.generate(7, (index) {
-          final dayDate = startOfWeek.add(Duration(days: index));
-          final dayName =
-              localizationService.getDayName(dayDate.weekday, short: true);
-          final isWeekend = dayDate.weekday >= 6;
-          final isToday = dayDate.year == DateTime.now().year &&
-              dayDate.month == DateTime.now().month &&
-              dayDate.day == DateTime.now().day;
-
-          return Expanded(
-            child: GestureDetector(
-              onTapDown: (details) =>
-                  _startLongPressTimer(dayDate, details.globalPosition),
-              onTapUp: (_) => _cancelLongPress(),
-              onTapCancel: _cancelLongPress,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: isToday
-                      ? theme.primaryColor.withAlpha((0.2 * 255).round())
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                alignment: Alignment.center,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      dayName,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isToday
-                            ? theme.primaryColor
-                            : (isWeekend
-                                ? Colors.red
-                                : theme.textTheme.bodyMedium?.color),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      dayDate.day.toString(),
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isToday
-                            ? theme.primaryColor
-                            : theme.textTheme.titleSmall?.color,
-                      ),
-                    ),
-                  ],
+        children: [
+          // Empty space for time labels column
+          SizedBox(
+            width: 60,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: theme.dividerColor, width: 2),
                 ),
               ),
             ),
-          );
-        }),
+          ),
+          // Day headers
+          Expanded(
+            child: Row(
+              children: List.generate(7, (index) {
+                final dayDate = startOfWeek.add(Duration(days: index));
+                final dayName = localizationService.getDayName(dayDate.weekday,
+                    short: true);
+                final isWeekend = dayDate.weekday >= 6;
+                final isToday = dayDate.year == DateTime.now().year &&
+                    dayDate.month == DateTime.now().month &&
+                    dayDate.day == DateTime.now().day;
+
+                return Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isToday
+                          ? theme.primaryColor.withAlpha((0.1 * 255).round())
+                          : Colors.transparent,
+                      border: Border(
+                        bottom: BorderSide(color: theme.dividerColor, width: 2),
+                        right: index < 6
+                            ? BorderSide(
+                                color: theme.dividerColor
+                                    .withAlpha((0.3 * 255).round()))
+                            : BorderSide.none,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          dayName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isToday
+                                ? theme.primaryColor
+                                : (isWeekend
+                                    ? Colors.red
+                                    : theme.textTheme.bodyMedium?.color),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          dayDate.day.toString(),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isToday
+                                ? theme.primaryColor
+                                : theme.textTheme.titleMedium?.color,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHourlyWeekView(DateTime startOfWeek, ThemeData theme) {
-    // This is a simplified hourly view. You would need to implement the full version
-    // with events positioned at their specific times.
-    return Row(
-      children: [
-        // Time labels column
-        SizedBox(
-          width: 60,
-          child: ListView.builder(
-            itemCount: 24,
-            itemBuilder: (context, hour) {
-              return Container(
-                height: 60,
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: theme.dividerColor),
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    '${hour.toString().padLeft(2, '0')}:00',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        // Days columns
-        Expanded(
-          child: Row(
-            children: List.generate(7, (dayIndex) {
-              final dayDate = startOfWeek.add(Duration(days: dayIndex));
-
-              return Expanded(
-                child: Container(
+    return SingleChildScrollView(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Time labels column
+          SizedBox(
+            width: 60,
+            child: Column(
+              children: List.generate(24, (hour) {
+                return Container(
+                  height: 60,
                   decoration: BoxDecoration(
                     border: Border(
-                      left: BorderSide(color: theme.dividerColor),
-                      right: dayIndex == 6
-                          ? BorderSide(color: theme.dividerColor)
-                          : BorderSide.none,
+                      bottom: BorderSide(
+                          color: theme.dividerColor
+                              .withAlpha((0.5 * 255).round())),
+                      right: BorderSide(color: theme.dividerColor),
                     ),
                   ),
-                  child: Column(
-                    children: List.generate(24, (hour) {
-                      return GestureDetector(
-                        onTapDown: (details) => _startLongPressTimer(
-                            dayDate, details.globalPosition),
-                        onTapUp: (_) => _cancelLongPress(),
-                        onTapCancel: _cancelLongPress,
-                        child: Container(
-                          height: 60,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: theme.dividerColor),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
+                  alignment: Alignment.topCenter,
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '${hour.toString().padLeft(2, '0')}:00',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 10,
+                      color: theme.textTheme.bodySmall?.color
+                          ?.withAlpha((0.7 * 255).round()),
+                    ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
-        ),
-      ],
+          // Days columns with tasks
+          Expanded(
+            child: FutureBuilder<Map<String, List<Map<String, dynamic>>>>(
+              future: _getTasksForWeek(startOfWeek),
+              builder: (context, snapshot) {
+                final tasksByDay = snapshot.data ?? {};
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: List.generate(7, (dayIndex) {
+                    final dayDate = startOfWeek.add(Duration(days: dayIndex));
+                    final dayKey =
+                        '${dayDate.year}-${dayDate.month}-${dayDate.day}';
+                    final tasksForDay = tasksByDay[dayKey] ?? [];
+
+                    return Expanded(
+                      child: Stack(
+                        children: [
+                          // Hour grid
+                          Column(
+                            children: List.generate(24, (hour) {
+                              return GestureDetector(
+                                onTapDown: (details) {
+                                  final hourDateTime = DateTime(
+                                    dayDate.year,
+                                    dayDate.month,
+                                    dayDate.day,
+                                    hour,
+                                  );
+                                  _startLongPressTimer(
+                                      hourDateTime, details.globalPosition);
+                                },
+                                onTapUp: (_) => _cancelLongPress(),
+                                onTapCancel: _cancelLongPress,
+                                child: Container(
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      bottom: BorderSide(
+                                          color: theme.dividerColor
+                                              .withAlpha((0.5 * 255).round())),
+                                      right: dayIndex < 6
+                                          ? BorderSide(
+                                              color: theme.dividerColor
+                                                  .withAlpha(
+                                                      (0.3 * 255).round()))
+                                          : BorderSide.none,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                          // Tasks overlay
+                          ...tasksForDay.map((task) {
+                            final dueDate = DateTime.parse(task['dueDate']);
+                            final hour = dueDate.hour;
+                            final minute = dueDate.minute;
+                            final topPosition = (hour * 60.0) + minute;
+
+                            return Positioned(
+                              top: topPosition,
+                              left: 2,
+                              right: 2,
+                              child: Container(
+                                height: 50,
+                                margin: const EdgeInsets.only(bottom: 2),
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: theme.primaryColor
+                                      .withAlpha((0.8 * 255).round()),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  task['title'] ?? '',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                    );
+                  }),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<Map<String, List<Map<String, dynamic>>>> _getTasksForWeek(
+      DateTime startOfWeek) async {
+    try {
+      final taskMaps = await widget.viewModel.databaseService.getTasks();
+      final tasksByDay = <String, List<Map<String, dynamic>>>{};
+
+      final endOfWeek = startOfWeek.add(const Duration(days: 7));
+
+      for (var taskMap in taskMaps) {
+        final dueDateStr = taskMap['dueDate'] as String?;
+        final completed = (taskMap['completed'] as int?) ?? 0;
+
+        if (dueDateStr != null && completed == 0) {
+          try {
+            final dueDate = DateTime.parse(dueDateStr);
+            if (dueDate
+                    .isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
+                dueDate.isBefore(endOfWeek)) {
+              final dayKey = '${dueDate.year}-${dueDate.month}-${dueDate.day}';
+              tasksByDay.putIfAbsent(dayKey, () => []);
+              tasksByDay[dayKey]!.add(taskMap);
+            }
+          } catch (e) {
+            // Skip invalid date formats
+          }
+        }
+      }
+
+      return tasksByDay;
+    } catch (e) {
+      return {};
+    }
   }
 }

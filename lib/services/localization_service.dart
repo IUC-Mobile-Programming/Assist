@@ -74,6 +74,12 @@ class LocalizationService extends ChangeNotifier {
         : 'Add Event';
   }
 
+  String get addQuickEvent {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Hızlı Etkinlik Ekle'
+        : 'Add Quick Event';
+  }
+
   String get month {
     return _currentLanguage == AppLanguage.turkish
         ? 'Ay'

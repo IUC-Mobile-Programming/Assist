@@ -28,6 +28,8 @@ class CalendarViewModel extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
+  DatabaseService get databaseService => _databaseService;
+
   CalendarViewModel({
     required GetEventsUseCase getEventsUseCase,
     required AddEventUseCase addEventUseCase,
