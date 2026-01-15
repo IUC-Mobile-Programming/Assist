@@ -44,10 +44,11 @@ class DatabaseService extends ChangeNotifier {
   }
 
   // CRUD Operations
-  Future<void> insertTask(Map<String, dynamic> task) async {
+  Future<int> insertTask(Map<String, dynamic> task) async {
     final db = await database;
-    await db.insert('tasks', task);
+    final id = await db.insert('tasks', task);
     notifyListeners(); // Notify UI of changes
+    return id;
   }
 
   Future<List<Map<String, dynamic>>> getTasks() async {

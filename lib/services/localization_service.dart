@@ -184,6 +184,12 @@ class LocalizationService extends ChangeNotifier {
         : 'Add tasks via voice or text';
   }
 
+  String get voiceUnavailable {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Sesli komut bu cihazda desteklenmiyor.'
+        : 'Voice commands are not supported on this device.';
+  }
+
   String get exampleCommand {
     return _currentLanguage == AppLanguage.turkish
         ? 'Örnek: "Yarın saat 15:00\'te toplantı ekle"'
@@ -462,6 +468,12 @@ class LocalizationService extends ChangeNotifier {
     return _currentLanguage == AppLanguage.turkish
         ? 'Tema Değiştir'
         : 'Change Theme';
+  }
+
+  String get taskReminder {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Görev Hatırlatıcı'
+        : 'Task Reminder';
   }
 
   // Date formatting

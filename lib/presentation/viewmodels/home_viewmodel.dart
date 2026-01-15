@@ -5,6 +5,7 @@ import 'package:Assist/domain/use_cases/task_use_cases.dart';
 import 'package:Assist/data/repositories/task_repository.dart';
 import 'package:Assist/services/database_service.dart';
 import 'package:Assist/services/ai_service.dart';
+import 'package:Assist/services/notification_service.dart';
 import 'package:Assist/injection_container.dart';
 
 class HomeViewModel extends ChangeNotifier {
@@ -14,6 +15,7 @@ class HomeViewModel extends ChangeNotifier {
   final GetUpcomingTasksUseCase? _getUpcomingTasksUseCase;
   final DatabaseService? _databaseService;
   final AIService? _aiService;
+  final NotificationService? _notificationService; // Add field
 
   List<Task> _tasks = [];
   List<Task> get tasks => _tasks;
@@ -38,12 +40,14 @@ class HomeViewModel extends ChangeNotifier {
     GetUpcomingTasksUseCase? getUpcomingTasksUseCase,
     DatabaseService? databaseService,
     AIService? aiService,
+    NotificationService? notificationService, // Add param
   }) : _getTasksUseCase = getTasksUseCase,
         _addTaskUseCase = addTaskUseCase,
         _toggleTaskCompletionUseCase = toggleTaskCompletionUseCase,
         _getUpcomingTasksUseCase = getUpcomingTasksUseCase,
         _databaseService = databaseService,
-        _aiService = aiService {
+        _aiService = aiService,
+        _notificationService = notificationService {
     _loadInitialData();
   }
 
@@ -276,7 +280,27 @@ class HomeViewModel extends ChangeNotifier {
           return;
         }
 
-        await _databaseService!.deleteTask(dbId);
+        // Find the task to get its current properties
+        final task = _tasks.firstWhere((t) => t.id == taskId, orElse: () => Task(title: '', date: DateTime.now(), description: '', isCompleted: false, isImportant: false));
+        
+        if (task.id == null) {
+           await loadTasks(); // Refresh just in case
+           return;
+        }
+
+        // Toggle completion status
+        final newStatus = !task.isCompleted;
+
+        // If completing, cancel notification
+        if (newStatus && _notificationService != null) {
+          await _notificationService!.cancelNotification(taskId);
+        }
+
+        // Update in DB
+        await _databaseService!.updateTask(dbId, {
+          'completed': newStatus ? 1 : 0,
+        });
+
         await loadTasks();
         return;
       }

@@ -434,6 +434,27 @@ class _CalendarGridState extends State<CalendarGrid> {
     );
   }
 
+  Widget _buildCompletedBadge(ThemeData theme, Color baseColor) {
+    final badgeColor = _blend(theme.cardColor, baseColor, 0.12);
+
+    return Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        color: badgeColor,
+        shape: BoxShape.circle,
+        border: Border.all(color: baseColor.withAlpha((0.5 * 255).round())),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.check,
+          size: 11,
+          color: baseColor,
+        ),
+      ),
+    );
+  }
+
   Widget _buildWeekView(BuildContext context) {
     final localizationService = Provider.of<LocalizationService>(context);
     final theme = Theme.of(context);
@@ -624,6 +645,13 @@ class _CalendarGridState extends State<CalendarGrid> {
                         final dayKey =
                             '${dayDate.year}-${dayDate.month}-${dayDate.day}';
                         final tasksForDay = tasksByDay[dayKey] ?? [];
+                        final sortedTasks = [...tasksForDay];
+                        sortedTasks.sort((a, b) {
+                          final aCompleted = (a['completed'] ?? 0) == 1;
+                          final bCompleted = (b['completed'] ?? 0) == 1;
+                          if (aCompleted == bCompleted) return 0;
+                          return aCompleted ? -1 : 1;
+                        });
                         final isToday = dayDate.year == DateTime.now().year &&
                             dayDate.month == DateTime.now().month &&
                             dayDate.day == DateTime.now().day;
@@ -677,27 +705,37 @@ class _CalendarGridState extends State<CalendarGrid> {
                                   );
                                 }),
                               ),
-                              ...tasksForDay.map((task) {
+                              ...sortedTasks.map((task) {
                                 final dueDate = DateTime.parse(task['dueDate']);
                                 final hour = dueDate.hour;
                                 final minute = dueDate.minute;
                                 final topPosition = (hour * 60.0) + minute;
+                                final isCompleted =
+                                    (task['completed'] ?? 0) == 1;
+                                final baseColor = theme.primaryColor;
 
                                 return Positioned(
                                   top: topPosition,
                                   left: 4,
                                   right: 4,
                                   child: Container(
-                                    height: 50,
+                                    height: 52,
                                     margin: const EdgeInsets.only(bottom: 4),
-                                    padding: const EdgeInsets.all(6),
+                                    padding: const EdgeInsets.fromLTRB(8, 6, 20, 6),
                                     decoration: BoxDecoration(
-                                      color: theme.primaryColor
-                                          .withAlpha((0.85 * 255).round()),
+                                      color: isCompleted
+                                          ? baseColor
+                                              .withAlpha((0.35 * 255).round())
+                                          : baseColor
+                                              .withAlpha((0.85 * 255).round()),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: theme.primaryColor
-                                            .withAlpha((0.6 * 255).round()),
+                                        color: isCompleted
+                                            ? baseColor
+                                                .withAlpha((0.3 * 255).round())
+                                            : baseColor
+                                                .withAlpha((0.6 * 255).round()),
+                                        width: isCompleted ? 0.8 : 1.2,
                                       ),
                                       boxShadow: [
                                         BoxShadow(
@@ -706,21 +744,47 @@ class _CalendarGridState extends State<CalendarGrid> {
                                             light: 0.18,
                                             dark: 0.4,
                                           ),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 3),
+                                          blurRadius: isCompleted ? 2 : 6,
+                                          offset: Offset(0, isCompleted ? 1 : 3),
                                         ),
                                       ],
                                     ),
-                                    child: Text(
-                                      task['title'] ?? '',
-                                      style:
-                                          theme.textTheme.bodySmall?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 10,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
+                                    child: Stack(
+                                      children: [
+                                        Positioned.fill(
+                                          child: Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              task['title'] ?? '',
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: isCompleted
+                                                    ? Colors.white.withAlpha(
+                                                        (0.7 * 255).round(),
+                                                      )
+                                                    : Colors.white,
+                                                fontWeight: isCompleted
+                                                    ? FontWeight.w500
+                                                    : FontWeight.w600,
+                                                decoration: isCompleted
+                                                    ? TextDecoration.lineThrough
+                                                    : TextDecoration.none,
+                                                fontSize: 10,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isCompleted)
+                                          Positioned(
+                                            top: 4,
+                                            right: 4,
+                                            child: _buildCompletedBadge(
+                                              theme,
+                                              baseColor,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
                                 );
@@ -750,9 +814,7 @@ class _CalendarGridState extends State<CalendarGrid> {
 
       for (var taskMap in taskMaps) {
         final dueDateStr = taskMap['dueDate'] as String?;
-        final completed = (taskMap['completed'] as int?) ?? 0;
-
-        if (dueDateStr != null && completed == 0) {
+        if (dueDateStr != null) {
           try {
             final dueDate = DateTime.parse(dueDateStr);
             if (dueDate

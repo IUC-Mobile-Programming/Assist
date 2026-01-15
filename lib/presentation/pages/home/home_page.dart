@@ -117,7 +117,7 @@ class HomePageState extends State<HomePage> {
           if (!mounted) return;
           if (status == 'notAvailable') {
              ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Sesli komut bu cihazda desteklenmiyor.')),
+              SnackBar(content: Text(localization.voiceUnavailable)),
             );
             setState(() {
               _isListening = false;
@@ -125,7 +125,7 @@ class HomePageState extends State<HomePage> {
                 _voiceController.clear();
               }
             });
-          } else if (status == 'notListening' || status == 'done') {
+          } else if (status == 'notListening' || status == 'done' || status == 'error') {
             setState(() { 
               _isListening = false;
               if (_voiceController.text == localization.listening) {
@@ -139,8 +139,22 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<void> _sendCommand() async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final voiceService = ServiceLocator().voiceService;
     final input = _voiceController.text.trim();
-    if (input.isEmpty) return;
+    if (input.isEmpty || input == localization.listening) {
+      if (voiceService.isListening) {
+        await voiceService.stopListening();
+      }
+      if (_voiceController.text == localization.listening) {
+        _voiceController.clear();
+      }
+      setState(() => _isListening = false);
+      return;
+    }
+    if (voiceService.isListening) {
+      await voiceService.stopListening();
+    }
 
     final viewModel = Provider.of<HomeViewModel>(context, listen: false);
     final task = Task(
@@ -193,6 +207,7 @@ class HomePageState extends State<HomePage> {
   }
 
   void _handleVoiceChanged(String value, HomeViewModel viewModel) {
+    if (_isListening) return;
     _suggestionDebounce?.cancel();
     if (_assistantSuggestion != null) {
       setState(() => _assistantSuggestion = null);

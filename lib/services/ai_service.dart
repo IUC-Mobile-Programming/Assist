@@ -43,16 +43,15 @@ class OllamaAIService implements AIService {
   })  : timeout = timeout ?? const Duration(seconds: 25),
         _client = client ?? http.Client(),
         systemPrompt = systemPrompt ??
-            '''
-Sen Assist uygulamasında çalışan bir kişisel sekretersin.
-Amacın: kullanıcı görev yazarken onu netleştirmek ve uygulanabilir bir sonraki adım önermek.
+    '''
+Sen Assist uygulamasında çalışan bir yapay zeka asistanısın.
+Görevin: Kullanıcı için kısa, doğrudan ve sonuca odaklı metinler üretmek.
 
-Kurallar:
-- Sadece düz metin yaz. JSON yazma.
-- Kod yazma, teknik açıklama yapma.
-- Soru sorma (belirsizse en iyi varsayımla ilerle).
-- Kısa, net ve eylem odaklı ol.
-- Gereksiz uzun yazma.
+Kesin Kurallar:
+1. Sadece istenen çıktıyı ver.
+2. "Bunu yapıyorum", "İşte önerim", "Kullanıcı görev ekliyor" gibi giriş/meta cümleleri ASLA yazma.
+3. Tırnak işareti kullanma.
+4. Sadece Türkçe yanıt ver.
 ''';
 
   // -----------------------------
@@ -77,36 +76,60 @@ Kurallar:
       'raw': true,
     };
 
-    final response = await _client
-        .post(
-          uri,
-          headers: const {'Content-Type': 'application/json'},
-          body: jsonEncode(payload),
-        )
-        .timeout(timeout);
+    try {
+      final response = await _client
+          .post(
+            uri,
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          )
+          .timeout(timeout);
 
-    if (response.statusCode != 200) {
-      throw Exception('Ollama error: ${response.statusCode} ${response.body}');
-    }
+      if (response.statusCode != 200) {
+        throw Exception('Ollama error: ${response.statusCode} ${response.body}');
+      }
 
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-    final text = decoded['response']?.toString().trim() ?? '';
+      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+      final text = decoded['response']?.toString().trim() ?? '';
 
-    // Convert plain text into 3 recommendations.
-    final recs = _parseRecommendationsFromPlainText(text);
+      // Convert plain text into 3 recommendations.
+      final recs = _parseRecommendationsFromPlainText(text);
 
-    final now = DateTime.now();
-    return [
-      for (var i = 0; i < recs.length; i++)
+      final now = DateTime.now();
+      return [
+        for (var i = 0; i < recs.length; i++)
+          AIRecommendation(
+            id: 'ai-${now.millisecondsSinceEpoch}-$i',
+            title: recs[i].$1,
+            description: recs[i].$2,
+            category: recs[i].$3,
+            icon: _iconForCategory(recs[i].$3),
+            createdAt: now,
+          ),
+      ];
+    } catch (e) {
+       print('AI Service Error (Recs): $e');
+       // Fallback mock data
+       final now = DateTime.now();
+       return [
         AIRecommendation(
-          id: 'ai-${now.millisecondsSinceEpoch}-$i',
-          title: recs[i].$1,
-          description: recs[i].$2,
-          category: recs[i].$3,
-          icon: _iconForCategory(recs[i].$3),
+          id: 'ai-mock-1',
+          title: 'Günlük planını yap',
+          description: 'Bugün için en önemli 3 görevi belirle.',
+          category: 'Plan',
+          icon: Icons.event,
           createdAt: now,
         ),
-    ];
+        AIRecommendation(
+          id: 'ai-mock-2',
+          title: 'Kısa mola ver',
+          description: 'Verimliliğini artırmak için 5 dakika nefes egzersizi yap.',
+          category: 'Sağlık',
+          icon: Icons.favorite,
+          createdAt: now,
+        ),
+       ];
+    }
   }
 
   String _buildRecommendationsPrompt(List<Task> tasks) {
@@ -217,39 +240,43 @@ $taskList
       'raw': true,
     };
 
-    final response = await _client
-        .post(
-          uri,
-          headers: const {'Content-Type': 'application/json'},
-          body: jsonEncode(payload),
-        )
-        .timeout(timeout);
+    try {
+      final response = await _client
+          .post(
+            uri,
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          )
+          .timeout(timeout);
 
-    if (response.statusCode != 200) {
-      throw Exception('Ollama error: ${response.statusCode} ${response.body}');
+      if (response.statusCode != 200) {
+        throw Exception('Ollama error: ${response.statusCode} ${response.body}');
+      }
+
+      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+      final text = decoded['response']?.toString().trim();
+
+      if (text == null || text.isEmpty) return null;
+      return _firstLine(text, maxLines: 2);
+    } catch (e) {
+      // Fallback if AI service is offline
+      print('AI Service Error (Suggestion): $e');
+      if (t.isNotEmpty) return '$t için detayları belirle ve uygula.';
+      return 'Görevi tek cümleyle özetle.';
     }
-
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-    final text = decoded['response']?.toString().trim();
-
-    if (text == null || text.isEmpty) return null;
-    return _firstLine(text, maxLines: 2);
   }
 
   String _buildDescriptionPrompt({required String title, required String category}) {
     return '''
 $systemPrompt
 
-Kullanıcı görev ekliyor. Görev için tek cümlelik açıklama öner.
-Kurallar:
-- Sadece düz metin yaz (JSON yok).
-- En fazla 12 kelime.
-- Nokta ile bitir.
+GÖREV: Aşağıdaki başlık ve kategori için tek bir cümlelik net bir açıklama yaz.
 
-Görev başlığı: "$title"
+GİRDİ:
+Başlık: "$title"
 Kategori: "$category"
 
-Açıklama:
+ÇIKTI (Sadece tek cümle):
 ''';
   }
 
@@ -307,29 +334,26 @@ String _buildCompletionPromptPlainText({
   final tasks = (context ?? []).take(4).map((t) => '- ${t.title}').join('\n');
 
   return '''
-Sen Assist uygulamasında çalışan bir kişisel sekretersin.
-Kullanıcının yazdığı görevi çok kısa şekilde tamamla.
+$systemPrompt
 
-ÇIKTI:
-- Sadece tek satır yaz.
-- 3-8 kelime arası.
-- Türkçe.
-- Kullanıcının yazdığı metni kopyalama.
-- kullanıcının girdiğini tamamla.
-- Kural/uyarı/etiket yazma.
-- Tırnak kullanma.
-- Nokta ile bitir.
+GÖREV: Kullanıcının cümlesini tamamla.
+ÇOK ÖNEMLİ: Kullanıcının yazdığı kısmı TEKRAR ETME. Sadece devamını yaz.
 
-Örnek:
-Girdi: market
-Çıktı: listesini çıkar ve eksikleri kontrol et.
+Örnekler:
+Girdi: "Marketten"
+Çıktı: "süt ve ekmek al."
+(YANLIŞ ÇIKTI: "Marketten süt ve ekmek al.")
 
-Girdi: toplantı hazırlığı
-Çıktı: yapılacak ve notlar toparlanacak.
+Girdi: "Yarın saat 3'te"
+Çıktı: "toplantıya katıl."
 
-Kullanıcı metni: $safe
-${tasks.isNotEmpty ? "Bağlam görevler:\n$tasks\n" : ""}
-Çıktı:
+Girdi: "Ödevlerimi"
+Çıktı: "kontrol et ve tamamla."
+
+Kullanıcı metni: "$safe"
+${tasks.isNotEmpty ? "Bağlam (Mevcut Görevler):\n$tasks\n" : ""}
+
+ÇIKTI (Sadece devamı):
 ''';
 }
 

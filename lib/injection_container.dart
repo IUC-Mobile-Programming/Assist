@@ -56,10 +56,10 @@ class ServiceLocator {
         : 'http://127.0.0.1:11434';
     _aiService = OllamaAIService(
       baseUrl: ollamaBaseUrl,
-      model: 'llama3.1',
+      model: 'neural-chat:latest',
     );
     _databaseService = DatabaseService();
-    _notificationService = InMemoryNotificationService();
+    _notificationService = LocalNotificationService();
     _voiceService = VoiceService();
 
     // Use cases
@@ -84,6 +84,7 @@ class ServiceLocator {
       getUpcomingTasksUseCase: _getUpcomingTasksUseCase,
       databaseService: _databaseService,
       aiService: _aiService,
+      notificationService: _notificationService,
     );
 
     _calendarViewModel = CalendarViewModel(

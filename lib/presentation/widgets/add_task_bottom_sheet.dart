@@ -4,6 +4,7 @@ import 'package:Assist/services/database_service.dart';
 import 'package:Assist/services/localization_service.dart';
 import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
 import 'package:Assist/injection_container.dart';
+import 'package:Assist/services/notification_service.dart';
 
 class AddTaskBottomSheet extends StatefulWidget {
   const AddTaskBottomSheet({super.key});
@@ -91,6 +92,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
 
   Future<void> _toggleListening() async {
     final voiceService = ServiceLocator().voiceService;
+    final localization = Provider.of<LocalizationService>(context, listen: false);
 
     if (_isListening) {
       await voiceService.stopListening();
@@ -99,6 +101,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
       setState(() => _isListening = true);
       await voiceService.startListening(
         onResult: (text) {
+          if (!mounted) return;
           setState(() {
             _titleController.text = text;
             _titleController.selection = TextSelection.collapsed(
@@ -107,7 +110,13 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
           });
         },
         onStatus: (status) {
-          if (status == 'notListening' || status == 'done') {
+          if (!mounted) return;
+          if (status == 'notAvailable') {
+            _showFloatingSnack(context, localization.voiceUnavailable);
+            setState(() => _isListening = false);
+            return;
+          }
+          if (status == 'notListening' || status == 'done' || status == 'error') {
             setState(() => _isListening = false);
           }
         },
@@ -383,7 +392,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                       }
 
                       // Veritabanına ekle
-                      await dbService.insertTask({
+                      final int taskId = await dbService.insertTask({
                         'title': _titleController.text,
                         'dueDate': dueDate?.toIso8601String(),
                         'description': _descriptionController.text,
@@ -393,6 +402,23 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                         'createdAt': DateTime.now().toString(),
                         'updatedAt': DateTime.now().toString(),
                       });
+
+                      // Schedule notification if due date is in the future
+                      if (dueDate != null && dueDate.isAfter(DateTime.now())) {
+                        try {
+                          final notificationService = ServiceLocator().notificationService;
+                          await notificationService.scheduleNotification(
+                            id: taskId.toString(),
+                            scheduledAt: dueDate,
+                            title: _titleController.text,
+                            body: _descriptionController.text.isNotEmpty 
+                                ? _descriptionController.text 
+                                : localization.taskReminder, // Use localized fallback
+                          );
+                        } catch (e) {
+                          print('Failed to schedule notification: $e');
+                        }
+                      }
 
                       if (!context.mounted) return;
 
