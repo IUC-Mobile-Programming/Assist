@@ -359,7 +359,6 @@ class _HomeContent extends StatelessWidget {
                   const CalendarPage(),
                 );
               },
-              theme: theme,
               isDarkMode: isDarkMode,
             ),
             _buildQuickActionButton(
@@ -373,7 +372,6 @@ class _HomeContent extends StatelessWidget {
                   const SettingsPage(),
                 );
               },
-              theme: theme,
               isDarkMode: isDarkMode,
             ),
           ],
@@ -402,34 +400,13 @@ class _HomeContent extends StatelessWidget {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
-    required ThemeData theme,
     required bool isDarkMode,
   }) {
-    return GestureDetector(
+    return QuickActionButton(
+      icon: icon,
+      label: label,
       onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: isDarkMode ? AppTheme.darkBackground : Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDarkMode ? Colors.grey[800]! : Colors.blue.shade100,
-              ),
-            ),
-            child: Icon(icon, size: 30, color: AppTheme.primaryColor),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+      isDarkMode: isDarkMode,
     );
   }
 
@@ -632,5 +609,93 @@ class _HomeContent extends StatelessWidget {
     if (shouldToggle == true) {
       await viewModel.toggleTaskCompletion(task.id);
     }
+  }
+}
+
+class QuickActionButton extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDarkMode;
+
+  const QuickActionButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.isDarkMode,
+  });
+
+  @override
+  State<QuickActionButton> createState() => _QuickActionButtonState();
+}
+
+class _QuickActionButtonState extends State<QuickActionButton> {
+  bool _isPressed = false;
+
+  void _setPressed(bool value) {
+    if (_isPressed == value) return;
+    setState(() => _isPressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final backgroundColor =
+        widget.isDarkMode ? AppTheme.darkBackground : Colors.blue.shade50;
+    final borderColor =
+        widget.isDarkMode ? Colors.grey[800]! : Colors.blue.shade100;
+    final shadowColor =
+        Color.fromRGBO(0, 0, 0, widget.isDarkMode ? 0.35 : 0.12);
+    final pressedShadow =
+        Color.fromRGBO(0, 0, 0, widget.isDarkMode ? 0.25 : 0.08);
+
+    return AnimatedScale(
+      scale: _isPressed ? 0.96 : 1,
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          splashColor: theme.primaryColor.withAlpha((0.12 * 255).round()),
+          highlightColor: theme.primaryColor.withAlpha((0.06 * 255).round()),
+          onTap: widget.onTap,
+          onTapDown: (_) => _setPressed(true),
+          onTapUp: (_) => _setPressed(false),
+          onTapCancel: () => _setPressed(false),
+          child: Column(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                curve: Curves.easeOut,
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: borderColor),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _isPressed ? pressedShadow : shadowColor,
+                      blurRadius: _isPressed ? 2 : 6,
+                      offset: Offset(0, _isPressed ? 1 : 3),
+                    ),
+                  ],
+                ),
+                child: Icon(widget.icon, size: 30, color: AppTheme.primaryColor),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
