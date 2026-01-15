@@ -154,4 +154,57 @@ class CalendarViewModel extends ChangeNotifier {
       return {};
     }
   }
+  Future<List<dynamic>> getTasksForDate(DateTime date) async {
+    try {
+      final taskMaps = await _databaseService.getTasks();
+      final tasks = <dynamic>[];
+
+      for (var taskMap in taskMaps) {
+         final dueDateStr = taskMap['dueDate'] as String?;
+         if (dueDateStr != null) {
+            try {
+              final dueDate = DateTime.parse(dueDateStr);
+              if (dueDate.year == date.year &&
+                  dueDate.month == date.month &&
+                  dueDate.day == date.day) {
+                
+                final task = CalendarTask(
+                  id: taskMap['id']?.toString() ?? '',
+                  title: taskMap['title'] ?? '',
+                  date: dueDate,
+                  description: taskMap['description'] ?? '',
+                  isCompleted: (taskMap['completed'] ?? 0) == 1,
+                  isImportant: (taskMap['important'] ?? 0) == 1,
+                );
+                tasks.add(task);
+            }
+          } catch (e) {
+            // skip
+          }
+        }
+      }
+      return tasks;
+    } catch (e) {
+      _error = 'Görevler yüklenirken bir hata oluştu: $e';
+      notifyListeners();
+      return [];
+    }
+  }
 }
+
+class CalendarTask {
+  final String id;
+  final String title;
+  final DateTime date;
+  final String description;
+  final bool isCompleted;
+  final bool isImportant;
+
+  CalendarTask({
+    required this.id,
+    required this.title,
+    required this.date,
+    required this.description,
+    required this.isCompleted,
+    required this.isImportant,
+  });

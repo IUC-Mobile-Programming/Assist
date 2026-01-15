@@ -5,6 +5,8 @@ import 'package:Assist/data/models/task.dart';
 import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
 import 'package:Assist/presentation/widgets/task_item.dart';
 import 'package:Assist/presentation/widgets/recommendation_item.dart';
+import 'package:Assist/presentation/pages/calendar/calendar_page.dart';
+import 'package:Assist/presentation/pages/settings/settings_page.dart';
 import 'package:Assist/core/app_theme.dart';
 import 'package:Assist/injection_container.dart';
 import 'package:Assist/services/localization_service.dart';
@@ -85,14 +87,55 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  void _toggleListening() {
+  Future<void> _toggleListening() async {
     final localization = Provider.of<LocalizationService>(context, listen: false);
-    setState(() {
-      _isListening = !_isListening;
-      if (_isListening) {
+    final voiceService = ServiceLocator().voiceService;
+
+    if (_isListening) {
+      await voiceService.stopListening();
+      setState(() {
+        _isListening = false;
+        if (_voiceController.text == localization.listening) {
+          _voiceController.clear();
+        }
+      });
+    } else {
+      setState(() {
+        _isListening = true;
         _voiceController.text = localization.listening;
-      }
-    });
+      });
+
+      await voiceService.startListening(
+        onResult: (text) {
+          if (!mounted) return;
+          setState(() {
+            _voiceController.text = text;
+             _voiceController.selection = TextSelection.collapsed(offset: text.length);
+          });
+        },
+        onStatus: (status) {
+          if (!mounted) return;
+          if (status == 'notAvailable') {
+             ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Sesli komut bu cihazda desteklenmiyor.')),
+            );
+            setState(() {
+              _isListening = false;
+               if (_voiceController.text == localization.listening) {
+                _voiceController.clear();
+              }
+            });
+          } else if (status == 'notListening' || status == 'done') {
+            setState(() { 
+              _isListening = false;
+              if (_voiceController.text == localization.listening) {
+                _voiceController.clear();
+              }
+            });
+          }
+        },
+      );
+    }
   }
 
   Future<void> _sendCommand() async {
@@ -310,7 +353,11 @@ class _HomeContent extends StatelessWidget {
               icon: Icons.calendar_today,
               label: localization.calendar,
               onTap: () {
-                // Navigate to calendar
+                _openQuickActionPage(
+                  context,
+                  localization.calendar,
+                  const CalendarPage(),
+                );
               },
               theme: theme,
               isDarkMode: isDarkMode,
@@ -320,7 +367,11 @@ class _HomeContent extends StatelessWidget {
               icon: Icons.settings,
               label: localization.settings,
               onTap: () {
-                // Navigate to settings
+                _openQuickActionPage(
+                  context,
+                  localization.settings,
+                  const SettingsPage(),
+                );
               },
               theme: theme,
               isDarkMode: isDarkMode,
@@ -328,6 +379,21 @@ class _HomeContent extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  void _openQuickActionPage(
+    BuildContext context,
+    String title,
+    Widget page,
+  ) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text(title)),
+          body: page,
+        ),
+      ),
     );
   }
 
