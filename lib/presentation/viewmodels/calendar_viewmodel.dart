@@ -154,29 +154,29 @@ class CalendarViewModel extends ChangeNotifier {
       return {};
     }
   }
+
   Future<List<dynamic>> getTasksForDate(DateTime date) async {
     try {
       final taskMaps = await _databaseService.getTasks();
-      final tasks = <dynamic>[];
+      final tasks = <CalendarTask>[];
 
       for (var taskMap in taskMaps) {
-         final dueDateStr = taskMap['dueDate'] as String?;
-         if (dueDateStr != null) {
-            try {
-              final dueDate = DateTime.parse(dueDateStr);
-              if (dueDate.year == date.year &&
-                  dueDate.month == date.month &&
-                  dueDate.day == date.day) {
-                
-                final task = CalendarTask(
-                  id: taskMap['id']?.toString() ?? '',
-                  title: taskMap['title'] ?? '',
-                  date: dueDate,
-                  description: taskMap['description'] ?? '',
-                  isCompleted: (taskMap['completed'] ?? 0) == 1,
-                  isImportant: (taskMap['important'] ?? 0) == 1,
-                );
-                tasks.add(task);
+        final dueDateStr = taskMap['dueDate'] as String?;
+        if (dueDateStr != null) {
+          try {
+            final dueDate = DateTime.parse(dueDateStr);
+            if (dueDate.year == date.year &&
+                dueDate.month == date.month &&
+                dueDate.day == date.day) {
+              final task = CalendarTask(
+                id: taskMap['id']?.toString() ?? '',
+                title: taskMap['title'] ?? '',
+                date: dueDate,
+                description: taskMap['description'] ?? '',
+                isCompleted: (taskMap['completed'] ?? 0) == 1,
+                isImportant: (taskMap['important'] ?? 0) == 1,
+              );
+              tasks.add(task);
             }
           } catch (e) {
             // skip
@@ -208,3 +208,4 @@ class CalendarTask {
     required this.isCompleted,
     required this.isImportant,
   });
+}
