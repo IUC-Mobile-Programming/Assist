@@ -9,6 +9,7 @@ import 'package:Assist/domain/use_cases/calendar_use_cases.dart';
 import 'package:Assist/services/ai_service.dart';
 import 'package:Assist/services/database_service.dart';
 import 'package:Assist/services/notification_service.dart';
+import 'package:Assist/services/voice_service.dart';
 import 'package:Assist/services/localization_service.dart';
 import 'package:Assist/services/theme_service.dart';
 import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
@@ -35,6 +36,7 @@ class ServiceLocator {
   late final AIService _aiService;
   late final DatabaseService _databaseService;
   late final NotificationService _notificationService;
+  late final VoiceService _voiceService;
 
   late final HomeViewModel _homeViewModel;
   late final CalendarViewModel _calendarViewModel;
@@ -58,6 +60,7 @@ class ServiceLocator {
     );
     _databaseService = DatabaseService();
     _notificationService = InMemoryNotificationService();
+    _voiceService = VoiceService();
 
     // Use cases
     _getTasksUseCase = GetTasksUseCase(_taskRepository);
@@ -120,6 +123,7 @@ class ServiceLocator {
   AIService get aiService => _aiService;
   DatabaseService get databaseService => _databaseService;
   NotificationService get notificationService => _notificationService;
+  VoiceService get voiceService => _voiceService;
 
   // ViewModels
   HomeViewModel get homeViewModel => _homeViewModel;

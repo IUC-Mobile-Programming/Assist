@@ -21,6 +21,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
   bool _isImportant = false;
   String? _descriptionSuggestion;
   bool _isSuggestionLoading = false;
+  bool _isListening = false;
 
   final _categoryMap = {
     'work': (LocalizationService loc) => loc.categoryWork,
@@ -88,6 +89,32 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
     setState(() => _descriptionSuggestion = null);
   }
 
+  Future<void> _toggleListening() async {
+    final voiceService = ServiceLocator().voiceService;
+
+    if (_isListening) {
+      await voiceService.stopListening();
+      setState(() => _isListening = false);
+    } else {
+      setState(() => _isListening = true);
+      await voiceService.startListening(
+        onResult: (text) {
+          setState(() {
+            _titleController.text = text;
+            _titleController.selection = TextSelection.collapsed(
+              offset: text.length,
+            );
+          });
+        },
+        onStatus: (status) {
+          if (status == 'notListening' || status == 'done') {
+            setState(() => _isListening = false);
+          }
+        },
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context);
@@ -146,6 +173,13 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                     hintText: localization.enterTaskTitle,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isListening ? Icons.mic : Icons.mic_none,
+                        color: _isListening ? Colors.red : null,
+                      ),
+                      onPressed: _toggleListening,
                     ),
                   ),
                 ),
