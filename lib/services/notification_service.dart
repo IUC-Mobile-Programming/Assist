@@ -1,74 +1,66 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_local_notifications_linux/flutter_local_notifications_linux.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:flutter_timezone/flutter_timezone.dart';
 
-/// Abstraction for scheduling and displaying notifications (local/remote).
 abstract class NotificationService {
   Future<void> init();
-  Future<void> scheduleNotification({required String id, required DateTime scheduledAt, required String title, String? body});
+  Future<void> scheduleNotification({
+    required String id,
+    required DateTime scheduledAt,
+    required String title,
+    String? body,
+  });
   Future<void> cancelNotification(String id);
+  Future<void> cancelAllNotifications();
 }
 
 class LocalNotificationService implements NotificationService {
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
 
   @override
   Future<void> init() async {
-    if (kIsWeb) {
-      return;
-    }
+    if (kIsWeb) return;
+
     tz.initializeTimeZones();
 
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    final DarwinInitializationSettings initializationSettingsDarwin =
-        DarwinInitializationSettings(
-      requestSoundPermission: true,
-      requestBadgePermission: true,
-      requestAlertPermission: true,
-    );
-
-    final LinuxInitializationSettings initializationSettingsLinux =
-        const LinuxInitializationSettings(
-      defaultActionName: 'Open notification',
-    );
-
-    if (defaultTargetPlatform == TargetPlatform.linux) {
-      final linuxPlugin =
-          flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-              LinuxFlutterLocalNotificationsPlugin>();
-      await linuxPlugin?.initialize(
-        initializationSettingsLinux,
-        onDidReceiveNotificationResponse:
-            (NotificationResponse response) async {
-          // Handle notification tap
-        },
-      );
-      return;
+    try {
+      // Paket ismi 'plus' olsa da sınıf ismi 'FlutterTimezone' olarak kalmış olabilir
+      final String? timeZoneName = await FlutterTimezone.getLocalTimezone();
+      if (timeZoneName != null) {
+        tz.setLocalLocation(tz.getLocation(timeZoneName));
+      }
+    } catch (e) {
+      debugPrint("Timezone hatası: $e");
+      tz.setLocalLocation(tz.getLocation('UTC'));
     }
 
-    final InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsDarwin,
-      macOS: initializationSettingsDarwin,
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
     );
 
-    await flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) async {
-        // Handle notification tap
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+
+    await _notifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (details) {
+        debugPrint("Bildirime tıklandı: ${details.payload}");
       },
     );
 
-    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
-
-    await androidImplementation?.requestNotificationsPermission();
+    if (Platform.isAndroid) {
+      await _notifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    }
   }
 
   @override
@@ -78,45 +70,37 @@ class LocalNotificationService implements NotificationService {
     required String title,
     String? body,
   }) async {
-    // Generate a unique int ID from the string ID
-    final int notificationId = id.hashCode;
+    if (scheduledAt.isBefore(DateTime.now())) return;
 
-    try {
-      await flutterLocalNotificationsPlugin.zonedSchedule(
-        notificationId,
-        title,
-        body ?? '',
-        tz.TZDateTime.from(scheduledAt, tz.local),
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'task_reminders',
-            'Task Reminders',
-            channelDescription: 'Notifications for task reminders',
-            importance: Importance.max,
-            priority: Priority.high,
-          ),
-          iOS: DarwinNotificationDetails(),
-          macOS: DarwinNotificationDetails(),
-          linux: LinuxNotificationDetails(
-            timeout: LinuxNotificationTimeout.expiresNever(),
-          ),
+    final int notificationId = id.hashCode.abs();
+
+    await _notifications.zonedSchedule(
+      notificationId,
+      title,
+      body ?? '',
+      tz.TZDateTime.from(scheduledAt, tz.local),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'assist_channel',
+          'Görev Hatırlatıcıları',
+          channelDescription: 'Görevleriniz için zamanlanmış bildirimler',
+          importance: Importance.max,
+          priority: Priority.high,
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
-    } catch (e) {
-      print('Error scheduling notification: $e');
-    }
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+    );
   }
 
   @override
   Future<void> cancelNotification(String id) async {
-    final int notificationId = id.hashCode;
-    await flutterLocalNotificationsPlugin.cancel(notificationId);
+    await _notifications.cancel(id.hashCode.abs());
   }
 
+  @override
   Future<void> cancelAllNotifications() async {
-    await flutterLocalNotificationsPlugin.cancelAll();
+    await _notifications.cancelAll();
   }
 }

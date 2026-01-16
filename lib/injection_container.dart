@@ -17,13 +17,13 @@ import 'package:Assist/presentation/viewmodels/calendar_viewmodel.dart';
 import 'package:Assist/presentation/viewmodels/settings_viewmodel.dart';
 
 class ServiceLocator {
-  // Private backing fields (declare before constructor so assignments are
-  // recognized by the analyzer when used inside the constructor).
   late final TaskRepository _taskRepository;
   late final CalendarRepository _calendarRepository;
 
   late final GetTasksUseCase _getTasksUseCase;
   late final AddTaskUseCase _addTaskUseCase;
+  late final UpdateTaskUseCase _updateTaskUseCase;
+  late final DeleteTaskUseCase _deleteTaskUseCase;
   late final ToggleTaskCompletionUseCase _toggleTaskCompletionUseCase;
   late final GetUpcomingTasksUseCase _getUpcomingTasksUseCase;
 
@@ -46,25 +46,26 @@ class ServiceLocator {
   factory ServiceLocator() => _instance;
 
   ServiceLocator._internal() {
-    // Initialize singletons
-    // Currently using in-memory mock implementations. Replace with persistent implementations later.
+    _notificationService = LocalNotificationService();
+    _databaseService = DatabaseService();
+    _voiceService = VoiceService();
+    _localizationService = LocalizationService();
+    _themeService = ThemeService();
     _taskRepository = InMemoryTaskRepository();
     _calendarRepository = InMemoryCalendarRepository();
-    // Services - register lightweight/in-memory defaults
+
     final ollamaBaseUrl = Platform.isAndroid
-        ? 'http://10.0.2.2:11434' // Android emulator loopback to host
+        ? 'http://10.0.2.2:11434'
         : 'http://127.0.0.1:11434';
     _aiService = OllamaAIService(
       baseUrl: ollamaBaseUrl,
       model: 'neural-chat:latest',
     );
-    _databaseService = DatabaseService();
-    _notificationService = LocalNotificationService();
-    _voiceService = VoiceService();
 
-    // Use cases
     _getTasksUseCase = GetTasksUseCase(_taskRepository);
-    _addTaskUseCase = AddTaskUseCase(_taskRepository);
+    _addTaskUseCase = AddTaskUseCase(_taskRepository, _notificationService);
+    _updateTaskUseCase = UpdateTaskUseCase(_taskRepository, _notificationService);
+    _deleteTaskUseCase = DeleteTaskUseCase(_taskRepository, _notificationService);
     _toggleTaskCompletionUseCase = ToggleTaskCompletionUseCase(_taskRepository);
     _getUpcomingTasksUseCase = GetUpcomingTasksUseCase(_taskRepository);
 
@@ -72,11 +73,6 @@ class ServiceLocator {
     _addEventUseCase = AddEventUseCase(_calendarRepository);
     _getEventsForDateUseCase = GetEventsForDateUseCase(_calendarRepository);
 
-    // Services
-    _localizationService = LocalizationService();
-    _themeService = ThemeService();
-
-    // ViewModels (long-lived singletons)
     _homeViewModel = HomeViewModel(
       getTasksUseCase: _getTasksUseCase,
       addTaskUseCase: _addTaskUseCase,
@@ -101,41 +97,29 @@ class ServiceLocator {
     );
   }
 
-  // Repositories
   TaskRepository get taskRepository => _taskRepository;
   CalendarRepository get calendarRepository => _calendarRepository;
-
-  // Use Cases
   GetTasksUseCase get getTasksUseCase => _getTasksUseCase;
   AddTaskUseCase get addTaskUseCase => _addTaskUseCase;
-  ToggleTaskCompletionUseCase get toggleTaskCompletionUseCase =>
-      _toggleTaskCompletionUseCase;
-  GetUpcomingTasksUseCase get getUpcomingTasksUseCase =>
-      _getUpcomingTasksUseCase;
-
+  UpdateTaskUseCase get updateTaskUseCase => _updateTaskUseCase;
+  DeleteTaskUseCase get deleteTaskUseCase => _deleteTaskUseCase;
+  ToggleTaskCompletionUseCase get toggleTaskCompletionUseCase => _toggleTaskCompletionUseCase;
+  GetUpcomingTasksUseCase get getUpcomingTasksUseCase => _getUpcomingTasksUseCase;
   GetEventsUseCase get getEventsUseCase => _getEventsUseCase;
   AddEventUseCase get addEventUseCase => _addEventUseCase;
-  GetEventsForDateUseCase get getEventsForDateUseCase =>
-      _getEventsForDateUseCase;
-
-  // Services
+  GetEventsForDateUseCase get getEventsForDateUseCase => _getEventsForDateUseCase;
   LocalizationService get localizationService => _localizationService;
   ThemeService get themeService => _themeService;
   AIService get aiService => _aiService;
   DatabaseService get databaseService => _databaseService;
   NotificationService get notificationService => _notificationService;
   VoiceService get voiceService => _voiceService;
-
-  // ViewModels
   HomeViewModel get homeViewModel => _homeViewModel;
   CalendarViewModel get calendarViewModel => _calendarViewModel;
   SettingsViewModel get settingsViewModel => _settingsViewModel;
 }
 
-/// Initialize longer-running services (DB, notifications) asynchronously.
-/// Call and await this before runApp in `main.dart`.
 Future<void> setupDependencies() async {
   final locator = ServiceLocator();
-  // Initialize DB and notification service if present.
   await locator.notificationService.init();
 }
