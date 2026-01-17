@@ -42,6 +42,9 @@ class ServiceLocator {
   late final CalendarViewModel _calendarViewModel;
   late final SettingsViewModel _settingsViewModel;
 
+  bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
+
   static final ServiceLocator _instance = ServiceLocator._internal();
   factory ServiceLocator() => _instance;
 
@@ -121,5 +124,13 @@ class ServiceLocator {
 
 Future<void> setupDependencies() async {
   final locator = ServiceLocator();
-  await locator.notificationService.init();
+  if (locator._isInitialized) return;
+  
+  // Initialize async services
+  await Future.wait([
+    locator.notificationService.init(),
+    locator.databaseService.database.then((_) {}), // Pre-warm database
+  ]);
+  
+  locator._isInitialized = true;
 }
