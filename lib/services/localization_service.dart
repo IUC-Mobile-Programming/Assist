@@ -13,8 +13,6 @@ class LocalizationService extends ChangeNotifier {
         return const Locale('tr', 'TR');
       case AppLanguage.english:
         return const Locale('en', 'US');
-      default:
-        return const Locale('tr', 'TR');
     }
   }
 
@@ -111,6 +109,12 @@ class LocalizationService extends ChangeNotifier {
         : 'Privacy';
   }
 
+  String get data {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Veriler'
+        : 'Data';
+  }
+
   String get language {
     return _currentLanguage == AppLanguage.turkish
         ? 'Dil'
@@ -141,36 +145,6 @@ class LocalizationService extends ChangeNotifier {
         : 'Save';
   }
 
-  String get help {
-    return _currentLanguage == AppLanguage.turkish
-        ? 'Yardım'
-        : 'Help';
-  }
-
-  String get about {
-    return _currentLanguage == AppLanguage.turkish
-        ? 'Hakkında'
-        : 'About';
-  }
-
-  String get faq {
-    return _currentLanguage == AppLanguage.turkish
-        ? 'Sıkça Sorulan Sorular'
-        : 'Frequently Asked Questions';
-  }
-
-  String get developerTeam {
-    return _currentLanguage == AppLanguage.turkish
-        ? 'Geliştirici Ekibi'
-        : 'Developer Team';
-  }
-
-  String get contact {
-    return _currentLanguage == AppLanguage.turkish
-        ? 'İletişim'
-        : 'Contact';
-  }
-
   // Voice Command Section
   String get giveCommand {
     return _currentLanguage == AppLanguage.turkish
@@ -182,6 +156,12 @@ class LocalizationService extends ChangeNotifier {
     return _currentLanguage == AppLanguage.turkish
         ? 'Sesli veya yazılı olarak görev ekleyin'
         : 'Add tasks via voice or text';
+  }
+
+  String get voiceInputHint {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Görev ekle veya soru sor...'
+        : 'Add task or ask a question...';
   }
 
   String get voiceUnavailable {
@@ -428,12 +408,6 @@ class LocalizationService extends ChangeNotifier {
         : 'OK';
   }
 
-  String get other {
-    return _currentLanguage == AppLanguage.turkish
-        ? 'Diğer'
-        : 'Other';
-  }
-
   String get enterTitle {
     return _currentLanguage == AppLanguage.turkish
         ? 'Lütfen bir başlık girin'
@@ -474,6 +448,93 @@ class LocalizationService extends ChangeNotifier {
     return _currentLanguage == AppLanguage.turkish
         ? 'Görev Hatırlatıcı'
         : 'Task Reminder';
+  }
+
+  String get enableDisableNotifications {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Bildirimleri Aç/Kapat'
+        : 'Enable/Disable Notifications';
+  }
+
+  String get sound {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Ses'
+        : 'Sound';
+  }
+
+  String get enableDisableNotificationSound {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Bildirim sesini aç/kapat'
+        : 'Enable/disable notification sound';
+  }
+
+  String get vibration {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Titreşim'
+        : 'Vibration';
+  }
+
+  String get enableDisableNotificationVibration {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Bildirim titreşimini aç/kapat'
+        : 'Enable/disable notification vibration';
+  }
+
+  // Settings Page - Data Section
+  String get deleteMyData {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Verilerimi Sil'
+        : 'Delete My Data';
+  }
+
+  String get deleteAllPersonalData {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Tüm kişisel verilerinizi silin'
+        : 'Delete all your personal data';
+  }
+
+  String get languageChanged {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Dil Türkçe olarak değiştirildi'
+        : 'Language changed to English';
+  }
+
+  String get turkish {
+    return 'Türkçe';
+  }
+
+  String get english {
+    return 'English';
+  }
+
+  String get appVersion {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Sürüm 1.0.0'
+        : 'Version 1.0.0';
+  }
+
+  String get deleteDataConfirmation {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Tüm görev verilerinizi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.'
+        : 'Are you sure you want to delete all your task data? This action cannot be undone.';
+  }
+
+  String get deleteDataSuccess {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Tüm veriler başarıyla silindi.'
+        : 'All data deleted successfully.';
+  }
+
+  String get deleteDataError {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Veri silme sırasında bir hata oluştu.'
+        : 'Error deleting data.';
+  }
+
+  String get delete {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Sil'
+        : 'Delete';
   }
 
   // Date formatting

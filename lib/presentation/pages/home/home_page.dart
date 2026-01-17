@@ -546,7 +546,7 @@ class _HomeContent extends StatelessWidget {
                       onChanged: onVoiceChanged,
                       style: baseStyle,
                       decoration: InputDecoration(
-                        hintText: 'Görev ekle veya soru sor...',
+                        hintText: localization.voiceInputHint,
                         contentPadding: inputPadding,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),

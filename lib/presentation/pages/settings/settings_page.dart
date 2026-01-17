@@ -23,8 +23,8 @@ class SettingsPage extends StatelessWidget {
               return _buildMainSettings(viewModel, context);
             case SettingsSection.notifications:
               return _buildNotificationsPage(viewModel, context);
-            case SettingsSection.privacy:
-              return _buildPrivacyPage(viewModel, context);
+            case SettingsSection.data:
+              return _buildDataPage(viewModel, context);
             case SettingsSection.language:
               return _buildLanguagePage(viewModel, context);
             case SettingsSection.helpAbout:
@@ -57,9 +57,9 @@ class SettingsPage extends StatelessWidget {
         ),
         const Divider(),
         _buildSettingItem(
-          icon: Icons.security,
-          title: localizationService.privacy,
-          onTap: () => viewModel.setSection(SettingsSection.privacy),
+          icon: Icons.storage,
+          title: localizationService.data,
+          onTap: () => viewModel.setSection(SettingsSection.data),
           context: context,
         ),
         const Divider(),
@@ -91,9 +91,7 @@ class SettingsPage extends StatelessWidget {
         _buildBackButton(() => viewModel.setSection(SettingsSection.main), context),
         const SizedBox(height: 20),
         ListTile(
-          title: Text(localizationService.currentLanguage == AppLanguage.turkish
-              ? 'Bildirimleri Aç/Kapat'
-              : 'Enable/Disable Notifications'),
+          title: Text(localizationService.enableDisableNotifications),
           trailing: Switch(
             value: viewModel.notificationsEnabled,
             onChanged: viewModel.toggleNotifications,
@@ -101,12 +99,8 @@ class SettingsPage extends StatelessWidget {
         ),
         const Divider(),
         ListTile(
-          title: Text(localizationService.currentLanguage == AppLanguage.turkish
-              ? 'Ses'
-              : 'Sound'),
-          subtitle: Text(localizationService.currentLanguage == AppLanguage.turkish
-              ? 'Bildirim sesini aç/kapat'
-              : 'Enable/disable notification sound'),
+          title: Text(localizationService.sound),
+          subtitle: Text(localizationService.enableDisableNotificationSound),
           trailing: Switch(
             value: viewModel.soundEnabled,
             onChanged: viewModel.toggleSound,
@@ -114,12 +108,8 @@ class SettingsPage extends StatelessWidget {
         ),
         const Divider(),
         ListTile(
-          title: Text(localizationService.currentLanguage == AppLanguage.turkish
-              ? 'Titreşim'
-              : 'Vibration'),
-          subtitle: Text(localizationService.currentLanguage == AppLanguage.turkish
-              ? 'Bildirim titreşimini aç/kapat'
-              : 'Enable/disable notification vibration'),
+          title: Text(localizationService.vibration),
+          subtitle: Text(localizationService.enableDisableNotificationVibration),
           trailing: Switch(
             value: viewModel.vibrationEnabled,
             onChanged: viewModel.toggleVibration,
@@ -129,7 +119,7 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPrivacyPage(SettingsViewModel viewModel, BuildContext context) {
+  Widget _buildDataPage(SettingsViewModel viewModel, BuildContext context) {
     final localizationService = Provider.of<LocalizationService>(context);
 
     return ListView(
@@ -138,37 +128,11 @@ class SettingsPage extends StatelessWidget {
         _buildBackButton(() => viewModel.setSection(SettingsSection.main), context),
         const SizedBox(height: 20),
         ListTile(
-          title: Text(localizationService.currentLanguage == AppLanguage.turkish
-              ? 'Veri Gizliliği'
-              : 'Data Privacy'),
-          subtitle: Text(localizationService.currentLanguage == AppLanguage.turkish
-              ? 'Kişisel verilerinizin nasıl kullanıldığını öğrenin'
-              : 'Learn how your personal data is used'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {},
-        ),
-        const Divider(),
-        ListTile(
-          title: Text(localizationService.currentLanguage == AppLanguage.turkish
-              ? 'Konum Gizliliği'
-              : 'Location Privacy'),
-          subtitle: Text(localizationService.currentLanguage == AppLanguage.turkish
-              ? 'Konum verilerinizin kullanımı'
-              : 'Use of your location data'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {},
-        ),
-        const Divider(),
-        ListTile(
-          title: Text(localizationService.currentLanguage == AppLanguage.turkish
-              ? 'Verilerimi Sil'
-              : 'Delete My Data'),
-          subtitle: Text(localizationService.currentLanguage == AppLanguage.turkish
-              ? 'Tüm kişisel verilerinizi silin'
-              : 'Delete all your personal data'),
+          title: Text(localizationService.deleteMyData),
+          subtitle: Text(localizationService.deleteAllPersonalData),
           trailing: const Icon(Icons.delete_outline, color: Colors.red),
           textColor: Colors.red,
-          onTap: () {},
+          onTap: () => _showDeleteConfirmationDialog(context, viewModel, localizationService),
         ),
       ],
     );
@@ -188,14 +152,14 @@ class SettingsPage extends StatelessWidget {
         ),
         const Divider(),
         RadioListTile<AppLanguage>(
-          title: const Text('Türkçe'),
+          title: Text(localizationService.turkish),
           value: AppLanguage.turkish,
           groupValue: viewModel.selectedLanguage,
           onChanged: (value) => viewModel.setLanguage(value!),
         ),
         const Divider(),
         RadioListTile<AppLanguage>(
-          title: const Text('English'),
+          title: Text(localizationService.english),
           value: AppLanguage.english,
           groupValue: viewModel.selectedLanguage,
           onChanged: (value) => viewModel.setLanguage(value!),
@@ -209,9 +173,7 @@ class SettingsPage extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    viewModel.selectedLanguage == AppLanguage.turkish
-                        ? 'Dil Türkçe olarak değiştirildi'
-                        : 'Language changed to English',
+                    localizationService.languageChanged,
                     style: const TextStyle(color: Colors.white),
                   ),
                   backgroundColor: AppTheme.successColor,
@@ -260,13 +222,70 @@ class SettingsPage extends StatelessWidget {
   }
 
   Widget _buildAppVersion(BuildContext context) {
+    final localizationService = Provider.of<LocalizationService>(context);
+    
     return Center(
       child: Text(
-        'Version 1.0.0',
+        localizationService.appVersion,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           color: Theme.of(context).hintColor,
         ),
       ),
+    );
+  }
+
+  void _showDeleteConfirmationDialog(BuildContext context, SettingsViewModel viewModel, LocalizationService localizationService) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(localizationService.deleteMyData),
+          content: Text(localizationService.deleteDataConfirmation),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(localizationService.cancel),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  await viewModel.deleteAllData();
+                  if (context.mounted) {
+                    Navigator.of(context).pop(); // Close dialog
+                    Navigator.of(context).pop(); // Close settings page
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          localizationService.deleteDataSuccess,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        backgroundColor: AppTheme.successColor,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          localizationService.deleteDataError,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: Text(
+                localizationService.delete,
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

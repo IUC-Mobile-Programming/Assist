@@ -51,6 +51,12 @@ class DatabaseService extends ChangeNotifier {
     return id;
   }
 
+  Future<void> deleteAllTasks() async {
+    final db = await database;
+    await db.delete('tasks');
+    notifyListeners();
+  }
+
   Future<List<Map<String, dynamic>>> getTasks() async {
     final db = await database;
     return db.query('tasks');

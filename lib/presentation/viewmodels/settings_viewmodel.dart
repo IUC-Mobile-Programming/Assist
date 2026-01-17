@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:Assist/services/theme_service.dart';
 import 'package:Assist/services/localization_service.dart';
+import 'package:Assist/services/database_service.dart';
 import 'package:Assist/presentation/viewmodels/base_viewmodel.dart';
+import 'package:Assist/injection_container.dart';
 
-enum SettingsSection { main, notifications, privacy, language, helpAbout }
+enum SettingsSection { main, notifications, data, language, helpAbout }
 
 class SettingsViewModel extends BaseViewModel {
   final ThemeService? _themeService;
@@ -69,4 +71,14 @@ class SettingsViewModel extends BaseViewModel {
   }
 
   bool get isDarkMode => _themeService?.isDarkMode ?? false;
+
+  Future<void> deleteAllData() async {
+    try {
+      final databaseService = ServiceLocator().databaseService;
+      await databaseService.deleteAllTasks();
+    } catch (e) {
+      debugPrint('Error deleting all data: $e');
+      rethrow;
+    }
+  }
 }
