@@ -77,6 +77,23 @@ Kesin Kurallar:
 ''';
   }
 
+  List<String> _allowedCategories(AppLanguage language) {
+    final loc = localizationService;
+    if (loc != null) {
+      return [
+        loc.categoryWork,
+        loc.categoryPersonal,
+        loc.categoryShopping,
+        loc.categoryHealth,
+        loc.categoryOther,
+      ];
+    }
+    if (language == AppLanguage.english) {
+      return ['Work', 'Personal', 'Shopping', 'Health', 'Other'];
+    }
+    return ['İş', 'Kişisel', 'Alışveriş', 'Sağlık', 'Diğer'];
+  }
+
   // -----------------------------
   // 1) Recommendations (NO JSON)
   // -----------------------------
@@ -117,7 +134,7 @@ Kesin Kurallar:
       final text = decoded['response']?.toString().trim() ?? '';
 
       // Convert plain text into 3 recommendations.
-      final recs = _parseRecommendationsFromPlainText(text, language);
+      final recs = _parseRecommendationsFromPlainText(text, language, context);
 
       final now = DateTime.now();
       return [
@@ -135,13 +152,14 @@ Kesin Kurallar:
        print('AI Service Error (Recs): $e');
        // Fallback mock data
        final now = DateTime.now();
+       final categories = _allowedCategories(language);
        if (language == AppLanguage.english) {
          return [
            AIRecommendation(
              id: 'ai-mock-1',
              title: 'Plan your day',
              description: 'Pick the top 3 tasks for today.',
-             category: 'Plan',
+             category: categories.last,
              icon: Icons.event,
              createdAt: now,
            ),
@@ -149,7 +167,7 @@ Kesin Kurallar:
              id: 'ai-mock-2',
              title: 'Take a short break',
              description: 'Do a 5-minute breathing exercise.',
-             category: 'Health',
+             category: categories[3],
              icon: Icons.favorite,
              createdAt: now,
            ),
@@ -160,7 +178,7 @@ Kesin Kurallar:
           id: 'ai-mock-1',
           title: 'Günlük planını yap',
           description: 'Bugün için en önemli 3 görevi belirle.',
-          category: 'Plan',
+          category: categories.last,
           icon: Icons.event,
           createdAt: now,
         ),
@@ -168,7 +186,7 @@ Kesin Kurallar:
           id: 'ai-mock-2',
           title: 'Kısa mola ver',
           description: 'Verimliliğini artırmak için 5 dakika nefes egzersizi yap.',
-          category: 'Sağlık',
+          category: categories[3],
           icon: Icons.favorite,
           createdAt: now,
         ),
@@ -177,10 +195,12 @@ Kesin Kurallar:
   }
 
   String _buildRecommendationsPrompt(List<Task> tasks, AppLanguage language) {
+    final categories = _allowedCategories(language);
+    final categoryList = categories.join(', ');
     final taskList = tasks.take(10).map((t) {
       final due = t.date.toIso8601String().split('T').first;
       final category = (t.category == null || t.category!.trim().isEmpty)
-          ? (language == AppLanguage.english ? 'General' : 'Genel')
+          ? categories.last
           : t.category!;
       final flags = [
         if (t.isImportant) language == AppLanguage.english ? 'important' : 'önemli',
@@ -203,8 +223,14 @@ Format (STRICT):
 Rules:
 - Title: 3-6 words, start with a verb.
 - Description: one sentence, ends with a period.
-- Category: 1-2 words (e.g., Plan, Health, Finance, Shopping, Home, General).
+- Category: use exactly one of: $categoryList.
 - Prioritize incomplete and important tasks.
+- Prefer the user's task categories when possible.
+- Do not invent new category names.
+- If a task's category is Other, infer a better category from the task text.
+- Do not output headers or labels like "Title" or "Description".
+- Do not include the word "category" in the title or description.
+- Each recommendation must be different and focus on a different task or action.
 - Plain text only (no JSON).
 - English.
 
@@ -225,8 +251,14 @@ Format (KESİN):
 Kurallar:
 - Başlık 3-6 kelime, eylem fiiliyle başlasın.
 - Açıklama tek cümle olsun ve nokta ile bitsin.
-- Kategori 1-2 kelime olsun (ör: Plan, Sağlık, Finans, Alışveriş, Düzen, Genel).
+- Kategori şu listeden biri olsun: $categoryList.
 - Tamamlanmamış ve önemli görevlere öncelik ver.
+- Mümkünse kullanıcının görev kategorilerini kullan.
+- Yeni kategori adı uydurma.
+- Kategori "Diğer" ise metinden daha uygun kategori çıkar.
+- "Başlık", "Açıklama" gibi etiketleri yazma.
+- Başlık veya açıklamada "kategori" kelimesini kullanma.
+- Her öneri farklı olsun, farklı bir görev ya da aksiyona odaklansın.
 - Sadece düz metin yaz (JSON yok).
 - Türkçe.
 
@@ -241,6 +273,7 @@ $taskList
   List<(String, String, String)> _parseRecommendationsFromPlainText(
     String text,
     AppLanguage language,
+    List<Task> tasks,
   ) {
     final lines = text
         .split('\n')
@@ -252,43 +285,197 @@ $taskList
       return value.replaceFirst(RegExp(r'^[•\-\d\.\)\s]+'), '').trim();
     }
 
-    String normalizeTitle(String value) {
-      var v = value.trim();
-      v = v.replaceAll('"', '').replaceAll("'", '');
-      v = v.replaceAll(RegExp(r'[.!?]+$'), '');
-      if (v.isEmpty) return 'Öneri';
-      return v;
+    final categories = _allowedCategories(language);
+    final workCategory = categories[0];
+    final personalCategory = categories[1];
+    final shoppingCategory = categories[2];
+    final healthCategory = categories[3];
+    final otherCategory = categories[4];
+    final fallbackTitle =
+        language == AppLanguage.english ? 'Recommendation' : 'Öneri';
+
+    String normalizeKey(String value) {
+      return value
+          .toLowerCase()
+          .replaceAll('\u0307', '')
+          .replaceAll('ı', 'i')
+          .replaceAll('İ', 'i')
+          .replaceAll('ş', 's')
+          .replaceAll('ğ', 'g')
+          .replaceAll('ü', 'u')
+          .replaceAll('ö', 'o')
+          .replaceAll('ç', 'c')
+          .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
     }
 
-    String guessCategory(String s) {
-      final v = s.toLowerCase();
+    bool containsWord(String text, String word) {
+      return RegExp(r'\b' + RegExp.escape(word) + r'\b').hasMatch(text);
+    }
+
+    String stripCategoryFromDescription(String value) {
+      var v = value.trim();
+      v = v.replaceAll(
+        RegExp(r'\s*\((category|kategori)\s*:\s*[^)]+\)\.?', caseSensitive: false),
+        '',
+      );
+      v = v.replaceAll(
+        RegExp(r'\s*-\s*(category|kategori)\s*:\s*.*$', caseSensitive: false),
+        '',
+      );
+      v = v.replaceAll(
+        RegExp(r'\s*(category|kategori)\s*:\s*.*$', caseSensitive: false),
+        '',
+      );
+      return v.trim();
+    }
+
+    String stripLabelPrefix(String value, {required String labelPattern}) {
+      return value
+          .trim()
+          .replaceFirst(RegExp(labelPattern, caseSensitive: false), '')
+          .trim();
+    }
+
+    String stripTitleLabel(String value) {
+      return stripLabelPrefix(value, labelPattern: r'^(title|başlık|baslik)\s*:\s*');
+    }
+
+    String stripDescriptionLabel(String value) {
+      return stripLabelPrefix(value, labelPattern: r'^(description|açıklama|aciklama)\s*:\s*');
+    }
+
+    String stripCategoryLabel(String value) {
+      return stripLabelPrefix(value, labelPattern: r'^(category|kategori)\s*:\s*');
+    }
+
+    bool isTemplateLine(String value) {
+      final normalized = normalizeKey(value);
       if (language == AppLanguage.english) {
-        if (v.contains('plan') || v.contains('schedule') || v.contains('calendar')) return 'Plan';
-        if (v.contains('health') || v.contains('walk') || v.contains('workout')) return 'Health';
-        if (v.contains('finance') || v.contains('payment') || v.contains('bill')) return 'Finance';
-        if (v.contains('shopping') || v.contains('grocery') || v.contains('market')) return 'Shopping';
-        if (v.contains('clean') || v.contains('organize') || v.contains('tidy')) return 'Home';
-        return 'General';
+        return normalized == 'title description category' ||
+            normalized == 'title description';
       }
-      if (v.contains('plan') || v.contains('takvim') || v.contains('saat')) return 'Plan';
-      if (v.contains('sağlık') || v.contains('yürüyüş') || v.contains('spor')) return 'Sağlık';
-      if (v.contains('finans') || v.contains('ödeme') || v.contains('fatura')) return 'Finans';
-      if (v.contains('alışveriş') || v.contains('market')) return 'Alışveriş';
-      if (v.contains('temiz') || v.contains('düzen')) return 'Düzen';
-      return 'Genel';
+      return normalized == 'baslik aciklama kategori' ||
+          normalized == 'baslik aciklama';
+    }
+
+    bool isPlaceholderEntry(String title, String desc) {
+      final t = normalizeKey(title);
+      final d = normalizeKey(desc);
+      if (language == AppLanguage.english) {
+        return (t == 'title' && d == 'description') ||
+            (t == 'title' && d.isEmpty) ||
+            (t.isEmpty && d == 'description');
+      }
+      return (t == 'baslik' && d == 'aciklama') ||
+          (t == 'baslik' && d.isEmpty) ||
+          (t.isEmpty && d == 'aciklama');
+    }
+
+    bool looksNonEnglishForEnglish(String value) {
+      if (language != AppLanguage.english) return false;
+      final raw = value.trim();
+      if (raw.isEmpty) return false;
+      if (RegExp(r'[^\x00-\x7F]').hasMatch(raw)) return true;
+      final normalized = normalizeKey(raw);
+      return RegExp(
+        r'\b(gorev|toplanti|yarin|bugun|icin|hazirlik|okul|liste|kontrol|eksik|basla|baslangic|odeme|fatura|alisveris|saglik|egzersiz|yuruyus|duzenle|planla)\b',
+      ).hasMatch(normalized);
+    }
+
+    String normalizeTitle(String value) {
+      var v = stripTitleLabel(value).trim();
+      v = v.replaceAll('"', '').replaceAll("'", '');
+      v = v.replaceAll(RegExp(r'[.!?]+$'), '');
+      if (v.isEmpty) return fallbackTitle;
+      return v;
     }
 
     String makeTitle(String s) {
       final words = s.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
       final take = words.take(words.length >= 5 ? 5 : words.length).join(' ');
-      return take.isEmpty ? 'Öneri' : take;
+      return take.isEmpty ? fallbackTitle : take;
+    }
+
+    String guessCategory(String s) {
+      final v = normalizeKey(s);
+      if (language == AppLanguage.english) {
+        if (RegExp(r'\b(health|doctor|dentist|appointment|medicine|medication|gym|workout|exercise|run|walk|yoga|sleep|wellness)\b')
+            .hasMatch(v)) {
+          return healthCategory;
+        }
+        if (RegExp(r'\b(shop|shopping|grocery|groceries|market|store|buy|purchase|order)\b')
+            .hasMatch(v)) {
+          return shoppingCategory;
+        }
+        if (RegExp(r'\b(work|meeting|deadline|project|report|client|email|call|presentation|review|proposal|agenda)\b')
+            .hasMatch(v)) {
+          return workCategory;
+        }
+        if (RegExp(r'\b(personal|family|home|house|birthday|vacation|travel|trip|hobby|study|course|learn)\b')
+            .hasMatch(v)) {
+          return personalCategory;
+        }
+        return otherCategory;
+      }
+      if (RegExp(r'\b(saglik|doktor|disci|randevu|ilac|spor|egzersiz|kosu|yuruyus|uyku|beslenme|diyet)\b')
+          .hasMatch(v)) {
+        return healthCategory;
+      }
+      if (RegExp(r'\b(alisveris|market|magaza|siparis|satin)\b')
+          .hasMatch(v)) {
+        return shoppingCategory;
+      }
+      if (RegExp(r'\b(toplanti|is|proje|teslim|rapor|musteri|eposta|mail|sunum|gorusme|ajanda|takvim)\b')
+          .hasMatch(v)) {
+        return workCategory;
+      }
+      if (RegExp(r'\b(kisisel|aile|ev|dogumgunu|tatil|seyahat|gezi|hobi|ders|kurs|ogren)\b')
+          .hasMatch(v)) {
+        return personalCategory;
+      }
+      return otherCategory;
+    }
+
+    String normalizeCategory(String raw, String title, String desc) {
+      final cleanedRaw = stripCategoryLabel(raw);
+      final combined = '$cleanedRaw $title $desc';
+      final rawKey = normalizeKey(cleanedRaw);
+      if (rawKey.isNotEmpty) {
+        for (final allowed in categories) {
+          final allowedKey = normalizeKey(allowed);
+          if (rawKey == allowedKey || containsWord(rawKey, allowedKey)) {
+            if (allowed == otherCategory) {
+              return guessCategory(combined);
+            }
+            return allowed;
+          }
+        }
+      }
+      return guessCategory(combined);
     }
 
     final result = <(String, String, String)>[];
+    final _seenTitles = <String>{};
+    final _seenDescriptions = <String>{};
+    final _seenPairs = <String>{};
     for (final line in lines) {
       if (result.length >= 3) break;
       final cleaned = stripPrefix(line);
       if (cleaned.isEmpty) continue;
+      if (isTemplateLine(cleaned)) continue;
+      if (!cleaned.contains('|')) {
+        final normalized = normalizeKey(cleaned);
+        if (normalized.startsWith('title ') ||
+            normalized.startsWith('description ') ||
+            normalized.startsWith('category ') ||
+            normalized.startsWith('baslik ') ||
+            normalized.startsWith('aciklama ') ||
+            normalized.startsWith('kategori ')) {
+          continue;
+        }
+      }
 
       final parts = cleaned
           .split('|')
@@ -302,37 +489,130 @@ $taskList
 
       if (parts.length >= 3) {
         title = normalizeTitle(parts[0]);
-        desc = _ensurePeriod(parts[1]);
-        cat = parts[2].trim();
+        desc = _ensurePeriod(
+          stripCategoryFromDescription(stripDescriptionLabel(parts[1])),
+        );
+        cat = normalizeCategory(stripCategoryLabel(parts[2]), title, desc);
       } else if (parts.length == 2) {
         title = normalizeTitle(parts[0]);
-        desc = _ensurePeriod(parts[1]);
-        cat = guessCategory(desc);
+        desc = _ensurePeriod(
+          stripCategoryFromDescription(stripDescriptionLabel(parts[1])),
+        );
+        cat = normalizeCategory('', title, desc);
       } else {
         final dashParts = cleaned.split(RegExp(r'\s[-–—]\s'));
         if (dashParts.length >= 2) {
           title = normalizeTitle(dashParts.first);
-          desc = _ensurePeriod(dashParts.sublist(1).join(' - ').trim());
-          cat = guessCategory(desc);
+          desc = _ensurePeriod(
+            stripCategoryFromDescription(
+              stripDescriptionLabel(dashParts.sublist(1).join(' - ').trim()),
+            ),
+          );
+          cat = normalizeCategory('', title, desc);
         } else {
           title = normalizeTitle(makeTitle(cleaned));
-          desc = _ensurePeriod(cleaned);
-          cat = guessCategory(cleaned);
+          desc = _ensurePeriod(
+            stripCategoryFromDescription(stripDescriptionLabel(cleaned)),
+          );
+          cat = normalizeCategory('', title, desc);
         }
       }
 
+      if (isPlaceholderEntry(title, desc)) {
+        continue;
+      }
+
+      if (looksNonEnglishForEnglish(title) || looksNonEnglishForEnglish(desc)) {
+        continue;
+      }
+
       if (cat.isEmpty) {
-        cat = guessCategory(desc);
+        cat = normalizeCategory('', title, desc);
+      }
+
+      final titleKey = normalizeKey(title);
+      final descKey = normalizeKey(desc);
+      final pairKey = '$titleKey|$descKey';
+      if (titleKey.isNotEmpty && _seenTitles.contains(titleKey)) {
+        continue;
+      }
+      if (descKey.isNotEmpty && _seenDescriptions.contains(descKey)) {
+        continue;
+      }
+      if (_seenPairs.contains(pairKey)) {
+        continue;
       }
 
       result.add((title, desc, cat));
+      _seenTitles.add(titleKey);
+      _seenDescriptions.add(descKey);
+      _seenPairs.add(pairKey);
+    }
+
+    if (result.length < 3) {
+      final pending = tasks.where((t) => !t.isCompleted).toList();
+      final pool = pending.isNotEmpty ? pending : tasks;
+      final usedTitles = result.map((r) => normalizeKey(r.$1)).toSet();
+      final usedDescriptions = result.map((r) => normalizeKey(r.$2)).toSet();
+      final verbs = language == AppLanguage.english
+          ? ['Finish', 'Review', 'Prepare', 'Plan', 'Schedule', 'Organize']
+          : ['Tamamla', 'Gözden geçir', 'Hazırla', 'Planla', 'Programla', 'Düzenle'];
+
+      String fallbackTitleFromTask(Task task, int index) {
+        final verb = verbs[index % verbs.length];
+        final rawTitle = task.title.trim();
+        if (language == AppLanguage.english && looksNonEnglishForEnglish(rawTitle)) {
+          return 'Finish a key task';
+        }
+        final words =
+            rawTitle.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+        final take = words.take(4).join(' ');
+        if (take.isEmpty) {
+          return language == AppLanguage.english
+              ? 'Finish a key task'
+              : 'Önemli bir görevi tamamla';
+        }
+        return '$verb $take';
+      }
+
+      String fallbackDescriptionFromTask(Task task) {
+        final t = task.title.trim();
+        final desc = task.description.trim();
+        if (desc.isNotEmpty && !looksNonEnglishForEnglish(desc)) {
+          return desc;
+        }
+        if (t.isEmpty || looksNonEnglishForEnglish(t)) {
+          return language == AppLanguage.english
+              ? 'Complete one important task today.'
+              : 'Bugün önemli bir görevi tamamla.';
+        }
+        return language == AppLanguage.english
+            ? 'Complete the next step for $t.'
+            : '$t için bir sonraki adımı tamamla.';
+      }
+
+      var fallbackIndex = 0;
+      for (final task in pool) {
+        if (result.length >= 3) break;
+        final title = fallbackTitleFromTask(task, fallbackIndex);
+        final titleKey = normalizeKey(title);
+        if (usedTitles.contains(titleKey)) continue;
+        final desc = fallbackDescriptionFromTask(task);
+        final descKey = normalizeKey(desc);
+        if (usedDescriptions.contains(descKey)) continue;
+        final cat = normalizeCategory(task.category ?? '', title, desc);
+        result.add((title, _ensurePeriod(desc), cat));
+        usedTitles.add(titleKey);
+        usedDescriptions.add(descKey);
+        fallbackIndex += 1;
+      }
     }
 
     if (result.isEmpty) {
       if (language == AppLanguage.english) {
-        result.add(('Choose a small step', 'Pick one task you can finish today.', 'General'));
+        result.add(('Choose a small step', 'Pick one task you can finish today.', otherCategory));
       } else {
-        result.add(('Küçük bir adım seç', 'Bugün tamamlayabileceğin tek bir adımı belirle.', 'Genel'));
+        result.add(('Küçük bir adım seç', 'Bugün tamamlayabileceğin tek bir adımı belirle.', otherCategory));
       }
     }
 
@@ -494,6 +774,7 @@ ${_systemPrompt(language)}
 
 TASK: Complete the user's sentence.
 IMPORTANT: Do NOT repeat the user's input. Only write the continuation.
+Do NOT use quotation marks.
 The continuation must be one complete sentence and end with a period.
 
 Examples:
@@ -519,6 +800,7 @@ ${_systemPrompt(language)}
 
 GÖREV: Kullanıcının cümlesini tamamla.
 ÇOK ÖNEMLİ: Kullanıcının yazdığı kısmı TEKRAR ETME. Sadece devamını yaz.
+Tırnak işareti kullanma.
 Devamı tek, tamamlanmış bir cümle olsun ve nokta ile bitsin.
 
 Örnekler:
@@ -563,7 +845,28 @@ ${tasks.isNotEmpty ? "Bağlam (Mevcut Görevler):\n$tasks\n" : ""}
   }
 
   String? _stripRepeatedPrefix(String completion, String input) {
-    var result = completion.trim();
+    String stripQuotes(String value) {
+      return value
+          .replaceAll(RegExp("^[\"']+"), '')
+          .replaceAll(RegExp("[\"']+\$"), '')
+          .trim();
+    }
+
+    String stripInputPrefixRegex(String value, String rawInput) {
+      final wordMatches = RegExp(r"\p{L}[\p{L}\p{M}\p{N}'-]*", unicode: true)
+          .allMatches(rawInput);
+      final words = wordMatches.map((m) => m.group(0)!).toList();
+      if (words.isEmpty) return value;
+      final pattern = words.map(RegExp.escape).join(r'\W+');
+      final re = RegExp(
+        "^[\"'\\s]*" + pattern + "(?:\\W+|\$)",
+        caseSensitive: false,
+        unicode: true,
+      );
+      return value.replaceFirst(re, '');
+    }
+
+    var result = stripQuotes(completion.trim());
     if (result.isEmpty) return null;
 
     final inputTrimmed = input.trim();
@@ -572,28 +875,23 @@ ${tasks.isNotEmpty ? "Bağlam (Mevcut Görevler):\n$tasks\n" : ""}
     String normalize(String s) {
       return s
           .toLowerCase()
-          .replaceAll(RegExp(r'[\\s\\p{P}]+', unicode: true), ' ')
+          .replaceAll(RegExp(r'[\s\p{P}]+', unicode: true), ' ')
           .trim();
     }
+
+    result = stripInputPrefixRegex(result, inputTrimmed).trimLeft();
+    result = stripQuotes(result);
 
     final normalizedInput = normalize(inputTrimmed);
     final normalizedCompletion = normalize(result);
 
     if (normalizedCompletion.startsWith(normalizedInput)) {
-      // Remove the exact input prefix when possible.
-      result = result.substring(inputTrimmed.length).trimLeft();
-    } else {
-      final index = normalizedCompletion.indexOf(normalizedInput);
-      if (index == 0) {
-        result = result.substring(inputTrimmed.length).trimLeft();
-      } else if (index > 0) {
-        // If input is repeated later, keep only the tail.
-        final rawIndex = result.toLowerCase().indexOf(inputTrimmed.toLowerCase());
-        if (rawIndex >= 0) {
-          result = result.substring(rawIndex + inputTrimmed.length).trimLeft();
-        }
-      }
+      // Remove the input prefix even if punctuation or quotes are present.
+      result = stripInputPrefixRegex(result, inputTrimmed).trimLeft();
     }
+
+    result = stripQuotes(result);
+    result = result.replaceFirst(RegExp(r'^[\s,;:\-–—]+'), '').trimLeft();
 
     if (result.isEmpty) return null;
     return result;
@@ -602,9 +900,11 @@ ${tasks.isNotEmpty ? "Bağlam (Mevcut Görevler):\n$tasks\n" : ""}
   IconData _iconForCategory(String category) {
     final value = category.toLowerCase();
     if (value.contains('sağlık') || value.contains('health')) return Icons.favorite;
+    if (value.contains('alışveriş') || value.contains('shopping')) return Icons.shopping_cart;
+    if (value.contains('iş') || value.contains('work')) return Icons.work;
+    if (value.contains('kişisel') || value.contains('personal')) return Icons.person;
     if (value.contains('plan')) return Icons.event;
     if (value.contains('finans') || value.contains('finance')) return Icons.payments;
-    if (value.contains('alışveriş') || value.contains('shopping')) return Icons.shopping_cart;
     if (value.contains('düzen') || value.contains('home')) return Icons.checklist;
     return Icons.lightbulb;
   }
@@ -620,17 +920,36 @@ class InMemoryAIService implements AIService {
     return localizationService?.currentLanguage ?? AppLanguage.turkish;
   }
 
+  List<String> _allowedCategories(AppLanguage language) {
+    final loc = localizationService;
+    if (loc != null) {
+      return [
+        loc.categoryWork,
+        loc.categoryPersonal,
+        loc.categoryShopping,
+        loc.categoryHealth,
+        loc.categoryOther,
+      ];
+    }
+    if (language == AppLanguage.english) {
+      return ['Work', 'Personal', 'Shopping', 'Health', 'Other'];
+    }
+    return ['İş', 'Kişisel', 'Alışveriş', 'Sağlık', 'Diğer'];
+  }
+
   @override
   Future<List<AIRecommendation>> fetchRecommendations(List<Task> context) async {
     await Future.delayed(const Duration(milliseconds: 200));
     final now = DateTime.now();
-    if (_currentLanguage() == AppLanguage.english) {
+    final language = _currentLanguage();
+    final categories = _allowedCategories(language);
+    if (language == AppLanguage.english) {
       return [
         AIRecommendation(
           id: 'ai-${now.millisecondsSinceEpoch}-0',
           title: 'Clarify the day',
           description: 'Choose the most important task for today.',
-          category: 'Plan',
+          category: categories.last,
           icon: Icons.event,
           createdAt: now,
         ),
@@ -638,7 +957,7 @@ class InMemoryAIService implements AIService {
           id: 'ai-${now.millisecondsSinceEpoch}-1',
           title: 'Define a small step',
           description: 'Write the first 10-minute action for each task.',
-          category: 'General',
+          category: categories.last,
           icon: Icons.lightbulb,
           createdAt: now,
         ),
@@ -649,7 +968,7 @@ class InMemoryAIService implements AIService {
         id: 'ai-${now.millisecondsSinceEpoch}-0',
         title: 'Günü netleştir',
         description: 'Bugün tamamlayacağın en önemli 1 görevi seç.',
-        category: 'Plan',
+        category: categories.last,
         icon: Icons.event,
         createdAt: now,
       ),
@@ -657,7 +976,7 @@ class InMemoryAIService implements AIService {
         id: 'ai-${now.millisecondsSinceEpoch}-1',
         title: 'Küçük adım belirle',
         description: 'Her görev için ilk 10 dakikalık adımı yaz.',
-        category: 'Genel',
+        category: categories.last,
         icon: Icons.lightbulb,
         createdAt: now,
       ),

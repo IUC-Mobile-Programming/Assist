@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:Assist/data/models/ai_recommendation.dart';
+import 'package:Assist/services/localization_service.dart';
 
 class RecommendationItem extends StatelessWidget {
   final AIRecommendation recommendation;
@@ -13,6 +15,7 @@ class RecommendationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
+    final localization = Provider.of<LocalizationService>(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -60,7 +63,7 @@ class RecommendationItem extends StatelessWidget {
                 ],
                 const SizedBox(height: 2),
                 Text(
-                  'Öneri: ${recommendation.category}',
+                  '${localization.category}: ${recommendation.category}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: isDarkMode ? Colors.green[300] : Colors.green.shade700,
                   ),

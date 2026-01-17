@@ -210,12 +210,13 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   List<AIRecommendation> _getMockRecommendations() {
+    final loc = ServiceLocator().localizationService;
     return [
       AIRecommendation(
         id: '1',
         title: 'Toplantıdan önce kahve molası ekle',
         description: '15 dakikalık bir mola verimliliği artırır',
-        category: 'Verimlilik',
+        category: loc.categoryWork,
         icon: Icons.coffee,
         createdAt: DateTime.now(),
       ),
@@ -223,7 +224,7 @@ class HomeViewModel extends ChangeNotifier {
         id: '2',
         title: 'Market listesine meyve ekle',
         description: 'Sağlıklı atıştırmalıklar ekleyin',
-        category: 'Sağlık',
+        category: loc.categoryHealth,
         icon: Icons.apple,
         createdAt: DateTime.now(),
       ),
@@ -231,7 +232,7 @@ class HomeViewModel extends ChangeNotifier {
         id: '3',
         title: 'Spor çantasını hazırla',
         description: 'Antrenman için gerekli eşyaları hazırlayın',
-        category: 'Hazırlık',
+        category: loc.categoryOther,
         icon: Icons.sports,
         createdAt: DateTime.now(),
       ),
