@@ -63,6 +63,7 @@ class ServiceLocator {
     _aiService = OllamaAIService(
       baseUrl: ollamaBaseUrl,
       model: 'neural-chat:latest',
+      localizationService: _localizationService,
     );
 
     _getTasksUseCase = GetTasksUseCase(_taskRepository);
