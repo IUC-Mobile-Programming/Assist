@@ -13,8 +13,14 @@ import 'injection_container.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _initDatabaseFactory();
-  await setupDependencies();
+  
+  // Run app immediately, initialize services after first frame
   runApp(const MyApp());
+  
+  // Defer heavy initialization to after first frame
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    setupDependencies();
+  });
 }
 
 void _initDatabaseFactory() {
@@ -32,8 +38,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final locator = ServiceLocator();
-
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ServiceLocator().themeService),
@@ -49,11 +53,45 @@ class MyApp extends StatelessWidget {
             title: 'ASSIST AI',
             theme: themeService.currentTheme,
             locale: localizationService.currentLocale,
-            home: const App(),
+            home: const _AppInitializer(),
             debugShowCheckedModeBanner: false,
           );
         },
       ),
     );
+  }
+}
+
+class _AppInitializer extends StatelessWidget {
+  const _AppInitializer();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: _waitForInitialization(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Initializing...'),
+                ],
+              ),
+            ),
+          );
+        }
+        return const App();
+      },
+    );
+  }
+
+  Future<void> _waitForInitialization() async {
+    while (!ServiceLocator().isInitialized) {
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
   }
 }

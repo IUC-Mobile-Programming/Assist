@@ -478,7 +478,6 @@ class _HomeContent extends StatelessWidget {
         ...viewModel.recommendations.map((recommendation) =>
             RecommendationItem(
               recommendation: recommendation,
-              onApply: () => viewModel.applyRecommendation(recommendation.id),
             ),
         ),
       ],

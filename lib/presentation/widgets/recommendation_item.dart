@@ -3,12 +3,10 @@ import 'package:Assist/data/models/ai_recommendation.dart';
 
 class RecommendationItem extends StatelessWidget {
   final AIRecommendation recommendation;
-  final VoidCallback onApply;
 
   const RecommendationItem({
     super.key,
     required this.recommendation,
-    required this.onApply,
   });
 
   @override
@@ -69,13 +67,6 @@ class RecommendationItem extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-          IconButton(
-            icon: Icon(
-              recommendation.isApplied ? Icons.check_circle : Icons.add_circle_outline,
-              color: isDarkMode ? Colors.green[300] : Colors.green,
-            ),
-            onPressed: recommendation.isApplied ? null : onApply,
           ),
         ],
       ),
