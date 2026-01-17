@@ -51,6 +51,15 @@ class RecommendationItem extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (recommendation.description.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    recommendation.description,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey.shade700,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 2),
                 Text(
                   'Öneri: ${recommendation.category}',

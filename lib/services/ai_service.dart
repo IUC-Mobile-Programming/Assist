@@ -71,7 +71,7 @@ Kesin Kurallar:
       'options': {
         'temperature': 0.35,
         'top_p': 0.9,
-        'num_predict': 220,
+        'num_predict': 260,
       },
       'raw': true,
     };
@@ -135,18 +135,28 @@ Kesin Kurallar:
   String _buildRecommendationsPrompt(List<Task> tasks) {
     final taskList = tasks.take(10).map((t) {
       final due = t.date.toIso8601String().split('T').first;
-      return '- ${t.title} (tarih: $due${t.isImportant ? ", önemli" : ""}${t.isCompleted ? ", tamamlandı" : ""})';
+      final category = (t.category == null || t.category!.trim().isEmpty) ? 'Genel' : t.category!;
+      final flags = [
+        if (t.isImportant) 'önemli',
+        if (t.isCompleted) 'tamamlandı',
+      ].join(', ');
+      final flagText = flags.isEmpty ? '' : ', $flags';
+      return '- ${t.title} (tarih: $due, kategori: $category$flagText)';
     }).join('\n');
 
     return '''
 $systemPrompt
 
-Kullanıcının görevlerine göre 3 kısa, uygulanabilir öneri üret.
+Kullanıcının görevlerine göre 3 uygulanabilir öneri üret.
+Format (KESİN):
+• Başlık | Açıklama | Kategori
+
 Kurallar:
+- Başlık 3-6 kelime, eylem fiiliyle başlasın.
+- Açıklama tek cümle olsun ve nokta ile bitsin.
+- Kategori 1-2 kelime olsun (ör: Plan, Sağlık, Finans, Alışveriş, Düzen, Genel).
+- Tamamlanmamış ve önemli görevlere öncelik ver.
 - Sadece düz metin yaz (JSON yok).
-- 3 madde olacak.
-- Her madde "•" ile başlayacak.
-- Her madde en fazla 1 cümle.
 - Türkçe.
 
 Görevler:
@@ -158,35 +168,24 @@ $taskList
 
   /// Returns list of (title, description, category) as tuples.
   List<(String, String, String)> _parseRecommendationsFromPlainText(String text) {
-    // Expect bullets. If not, fallback to sentence splitting.
     final lines = text
         .split('\n')
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty)
         .toList();
 
-    List<String> bullets = lines.where((l) => l.startsWith('•')).toList();
-    if (bullets.isEmpty) {
-      // fallback: take up to 3 "sentences"
-      bullets = text
-          .split(RegExp(r'[.!?]\s+'))
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .take(3)
-          .toList();
-    } else {
-      bullets = bullets.take(3).toList();
-      bullets = bullets.map((b) => b.replaceFirst('•', '').trim()).toList();
+    String stripPrefix(String value) {
+      return value.replaceFirst(RegExp(r'^[•\-\d\.\)\s]+'), '').trim();
     }
 
-    // Simple mapping: create a short title from first 3-5 words.
-    String makeTitle(String s) {
-      final words = s.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-      final take = words.take(words.length >= 5 ? 5 : words.length).join(' ');
-      return take.isEmpty ? 'Öneri' : take;
+    String normalizeTitle(String value) {
+      var v = value.trim();
+      v = v.replaceAll('"', '').replaceAll("'", '');
+      v = v.replaceAll(RegExp(r'[.!?]+$'), '');
+      if (v.isEmpty) return 'Öneri';
+      return v;
     }
 
-    // Category heuristic (optional)
     String guessCategory(String s) {
       final v = s.toLowerCase();
       if (v.contains('plan') || v.contains('takvim') || v.contains('saat')) return 'Plan';
@@ -197,15 +196,56 @@ $taskList
       return 'Genel';
     }
 
+    String makeTitle(String s) {
+      final words = s.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+      final take = words.take(words.length >= 5 ? 5 : words.length).join(' ');
+      return take.isEmpty ? 'Öneri' : take;
+    }
+
     final result = <(String, String, String)>[];
-    for (final b in bullets) {
-      final title = makeTitle(b);
-      final desc = _ensurePeriod(b);
-      final cat = guessCategory(b);
+    for (final line in lines) {
+      if (result.length >= 3) break;
+      final cleaned = stripPrefix(line);
+      if (cleaned.isEmpty) continue;
+
+      final parts = cleaned
+          .split('|')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
+      String title;
+      String desc;
+      String cat;
+
+      if (parts.length >= 3) {
+        title = normalizeTitle(parts[0]);
+        desc = _ensurePeriod(parts[1]);
+        cat = parts[2].trim();
+      } else if (parts.length == 2) {
+        title = normalizeTitle(parts[0]);
+        desc = _ensurePeriod(parts[1]);
+        cat = guessCategory(desc);
+      } else {
+        final dashParts = cleaned.split(RegExp(r'\s[-–—]\s'));
+        if (dashParts.length >= 2) {
+          title = normalizeTitle(dashParts.first);
+          desc = _ensurePeriod(dashParts.sublist(1).join(' - ').trim());
+          cat = guessCategory(desc);
+        } else {
+          title = normalizeTitle(makeTitle(cleaned));
+          desc = _ensurePeriod(cleaned);
+          cat = guessCategory(cleaned);
+        }
+      }
+
+      if (cat.isEmpty) {
+        cat = guessCategory(desc);
+      }
+
       result.add((title, desc, cat));
     }
 
-    // If still empty, add one fallback
     if (result.isEmpty) {
       result.add(('Küçük bir adım seç', 'Bugün tamamlayabileceğin tek bir adımı belirle.', 'Genel'));
     }
@@ -235,7 +275,7 @@ $taskList
       'options': {
         'temperature': 0.25,
         'top_p': 0.9,
-        'num_predict': 80,
+        'num_predict': 120,
       },
       'raw': true,
     };
@@ -276,7 +316,7 @@ GİRDİ:
 Başlık: "$title"
 Kategori: "$category"
 
-ÇIKTI (Sadece tek cümle):
+ÇIKTI (Sadece tek cümle, nokta ile biten tam bir cümle):
 ''';
   }
 
@@ -301,7 +341,7 @@ Kategori: "$category"
       'options': {
         'temperature': 0.2,
         'top_p': 0.9,
-        'num_predict': 35,
+        'num_predict': 80,
       },
       'raw': true,
     };
@@ -323,7 +363,8 @@ Kategori: "$category"
     if (text == null || text.isEmpty) return null;
 
     // Keep it short and clean.
-    return _firstLine(text, maxLines: 1);
+    final completion = _firstLine(text, maxLines: 1);
+    return _stripRepeatedPrefix(completion, safeInput);
   }
 
 String _buildCompletionPromptPlainText({
@@ -338,6 +379,7 @@ $systemPrompt
 
 GÖREV: Kullanıcının cümlesini tamamla.
 ÇOK ÖNEMLİ: Kullanıcının yazdığı kısmı TEKRAR ETME. Sadece devamını yaz.
+Devamı tek, tamamlanmış bir cümle olsun ve nokta ile bitsin.
 
 Örnekler:
 Girdi: "Marketten"
@@ -378,6 +420,43 @@ ${tasks.isNotEmpty ? "Bağlam (Mevcut Görevler):\n$tasks\n" : ""}
       t = '$t.';
     }
     return t;
+  }
+
+  String? _stripRepeatedPrefix(String completion, String input) {
+    var result = completion.trim();
+    if (result.isEmpty) return null;
+
+    final inputTrimmed = input.trim();
+    if (inputTrimmed.isEmpty) return result;
+
+    String normalize(String s) {
+      return s
+          .toLowerCase()
+          .replaceAll(RegExp(r'[\\s\\p{P}]+', unicode: true), ' ')
+          .trim();
+    }
+
+    final normalizedInput = normalize(inputTrimmed);
+    final normalizedCompletion = normalize(result);
+
+    if (normalizedCompletion.startsWith(normalizedInput)) {
+      // Remove the exact input prefix when possible.
+      result = result.substring(inputTrimmed.length).trimLeft();
+    } else {
+      final index = normalizedCompletion.indexOf(normalizedInput);
+      if (index == 0) {
+        result = result.substring(inputTrimmed.length).trimLeft();
+      } else if (index > 0) {
+        // If input is repeated later, keep only the tail.
+        final rawIndex = result.toLowerCase().indexOf(inputTrimmed.toLowerCase());
+        if (rawIndex >= 0) {
+          result = result.substring(rawIndex + inputTrimmed.length).trimLeft();
+        }
+      }
+    }
+
+    if (result.isEmpty) return null;
+    return result;
   }
 
   IconData _iconForCategory(String category) {

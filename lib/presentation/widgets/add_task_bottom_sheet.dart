@@ -202,6 +202,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                   maxLines: 3,
                   decoration: InputDecoration(
                     hintText: _descriptionSuggestion ?? localization.enterTaskDescription,
+                    hintMaxLines: 3,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
