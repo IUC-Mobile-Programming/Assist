@@ -570,4 +570,53 @@ class LocalizationService extends ChangeNotifier {
           : const ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][weekday - 1];
     }
   }
+
+  // Help & About Page
+  String get help {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Yardım'
+        : 'Help';
+  }
+
+  String get about {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Hakkında'
+        : 'About';
+  }
+
+  String get frequentlyAskedQuestions {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Sıkça Sorulan Sorular'
+        : 'Frequently Asked Questions';
+  }
+
+  String get faqHowToAddTask {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Görev nasıl eklerim?'
+        : 'How do I add a task?';
+  }
+
+  String get faqHowToAddTaskAnswer {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Ana ekrandaki "+" butonuna tıklayarak veya ASSIST AI\'a sesli komut vererek görev ekleyebilirsiniz.'
+        : 'You can add tasks by clicking the "+" button on the home screen or by giving voice commands to ASSIST AI.';
+  }
+
+  String get faqHowToSetupNotifications {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Bildirimler nasıl ayarlanır?'
+        : 'How do I set up notifications?';
+  }
+
+  String get faqHowToSetupNotificationsAnswer {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Ayarlar > Bildirimler bölümünden bildirim tercihlerinizi düzenleyebilirsiniz.'
+        : 'You can adjust your notification preferences from Settings > Notifications section.';
+  }
+
+  String get aiPoweredAssistant {
+    return _currentLanguage == AppLanguage.turkish
+        ? 'Yapay zeka destekli kişisel asistan uygulaması'
+        : 'AI-powered personal assistant application';
+  }
 }

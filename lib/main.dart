@@ -14,10 +14,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _initDatabaseFactory();
   
-  // Run app immediately, initialize services after first frame
+  // Uygulamayı başlat, servisleri sonra yükle
   runApp(const MyApp());
   
-  // Defer heavy initialization to after first frame
+  // Ağır işlemleri ilk çerçeveden sonra yap
   WidgetsBinding.instance.addPostFrameCallback((_) {
     setupDependencies();
   });

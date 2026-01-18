@@ -29,7 +29,7 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // Get the ViewModel from Provider after first frame and attach listener
+    // ViewModel'i Provider'den al ve değişiklikleri dinle
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _viewModel = Provider.of<HomeViewModel>(context, listen: false);
       _viewModel.addListener(_onViewModelChange);
@@ -38,7 +38,7 @@ class HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    // Remove listener if viewmodel was attached
+    // ViewModel dinleyicisini kaldır
     try {
       _viewModel.removeListener(_onViewModelChange);
     } catch (_) {}

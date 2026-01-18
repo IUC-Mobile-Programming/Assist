@@ -15,7 +15,7 @@ class HomeViewModel extends ChangeNotifier {
   final GetUpcomingTasksUseCase? _getUpcomingTasksUseCase;
   final DatabaseService? _databaseService;
   final AIService? _aiService;
-  final NotificationService? _notificationService; // Add field
+  final NotificationService? _notificationService;
 
   List<Task> _tasks = [];
   List<Task> get tasks => _tasks;
@@ -32,7 +32,7 @@ class HomeViewModel extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  // Constructor for dependency injection (for testing)
+  // Bağımlılıklar constructor'dan alınıyor
   HomeViewModel({
     GetTasksUseCase? getTasksUseCase,
     AddTaskUseCase? addTaskUseCase,
@@ -40,7 +40,7 @@ class HomeViewModel extends ChangeNotifier {
     GetUpcomingTasksUseCase? getUpcomingTasksUseCase,
     DatabaseService? databaseService,
     AIService? aiService,
-    NotificationService? notificationService, // Add param
+    NotificationService? notificationService,
   }) : _getTasksUseCase = getTasksUseCase,
         _addTaskUseCase = addTaskUseCase,
         _toggleTaskCompletionUseCase = toggleTaskCompletionUseCase,
@@ -51,7 +51,6 @@ class HomeViewModel extends ChangeNotifier {
     _loadInitialData();
   }
 
-  // Note: Default instances are provided by the application's ServiceLocator.
 
   Future<void> _loadInitialData() async {
     await loadTasks();
@@ -64,10 +63,10 @@ class HomeViewModel extends ChangeNotifier {
 
     try {
       if (_databaseService != null) {
-        // Fetch from database
+        // Veritabanından görevleri al
         final dbTasks = await _databaseService!.getTasks();
         
-        // Convert database maps to Task objects
+        // Veritabanı haritalarını Task nesnelerine dönüştür
         _tasks = [];
         for (var taskMap in dbTasks) {
           try {
@@ -84,25 +83,25 @@ class HomeViewModel extends ChangeNotifier {
             );
             _tasks.add(task);
           } catch (taskError) {
-            // Skip invalid tasks
+            // Hatalı görevleri atla
           }
         }
       } else if (_getTasksUseCase != null) {
         _tasks = await _getTasksUseCase!.execute();
       } else {
-        // Fallback to mock data
+        // Bağlantı yoksa örnek veri göster
         _tasks = _getMockTasks();
       }
 
-      // Filter upcoming tasks - use simple filter for database tasks
+      // Yaklaşan görevleri filtrele
       if (_databaseService != null) {
-        // For database tasks, show all incomplete tasks sorted by date, limit to 3
+        // Tamamlanmamış görevleri tarihe göre sırala, max 3 göster
         _upcomingTasks = _tasks
             .where((task) => !task.isCompleted)
             .toList()
             ..sort((a, b) => a.date.compareTo(b.date));
         
-        // Limit to 3 closest tasks
+        // En yakın 3 görevi göster
         if (_upcomingTasks.length > 3) {
           _upcomingTasks = _upcomingTasks.sublist(0, 3);
         }
@@ -115,7 +114,7 @@ class HomeViewModel extends ChangeNotifier {
       await _loadRecommendations(notify: false);
     } catch (e) {
       _error = 'Görevler yüklenirken bir hata oluştu: $e';
-      // Fallback to mock data on error
+      // Hata durumunda örnek veri göster
       _tasks = _getMockTasks();
       _upcomingTasks = _tasks.where((task) => !task.isCompleted).toList();
     } finally {
@@ -124,7 +123,6 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
-  // Convert DB category code (english identifiers) to localized display string
   String _toLocalizedCategory(dynamic raw) {
     final code = (raw ?? 'other').toString().toLowerCase();
     final loc = ServiceLocator().localizationService;
@@ -144,12 +142,11 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
-  // Convert a display category (possibly localized) to english DB code
+  // Türkçe kategoriyi kod haline getir
   String _toEnglishCategory(String? display) {
     if (display == null || display.isEmpty) return 'other';
     final d = display.toLowerCase();
     final loc = ServiceLocator().localizationService;
-    // Match against english codes first
     switch (d) {
       case 'work':
       case 'personal':
@@ -158,7 +155,7 @@ class HomeViewModel extends ChangeNotifier {
       case 'other':
         return d;
     }
-    // Then match against localized labels
+
     if (display == loc.categoryWork) return 'work';
     if (display == loc.categoryPersonal) return 'personal';
     if (display == loc.categoryShopping) return 'shopping';
@@ -245,7 +242,6 @@ class HomeViewModel extends ChangeNotifier {
   Future<void> addTask(Task task) async {
     _isLoading = true;
     notifyListeners();
-
     try {
       if (_databaseService != null) {
         await _databaseService!.insertTask({
@@ -261,7 +257,7 @@ class HomeViewModel extends ChangeNotifier {
       } else if (_addTaskUseCase != null) {
         await _addTaskUseCase!.execute(task);
       }
-      await loadTasks(); // Refresh tasks
+      await loadTasks(); // Görev listesini güncelle
     } catch (e) {
       _error = 'Görev eklenirken bir hata oluştu: $e';
     } finally {
@@ -272,7 +268,7 @@ class HomeViewModel extends ChangeNotifier {
 
   Future<void> toggleTaskCompletion(String taskId) async {
     try {
-      // If a database is configured, delete the task directly from SQLite
+      // Görev durumunu kapat
       if (_databaseService != null) {
         final dbId = int.tryParse(taskId);
         if (dbId == null) {
@@ -280,24 +276,22 @@ class HomeViewModel extends ChangeNotifier {
           notifyListeners();
           return;
         }
-
-        // Find the task to get its current properties
         final task = _tasks.firstWhere((t) => t.id == taskId, orElse: () => Task(title: '', date: DateTime.now(), description: '', isCompleted: false, isImportant: false));
         
         if (task.id == null) {
-           await loadTasks(); // Refresh just in case
+           await loadTasks(); // Listeyi güncelle
            return;
         }
 
-        // Toggle completion status
+        // Durumu değiştir
         final newStatus = !task.isCompleted;
 
-        // If completing, cancel notification
+        // Tamamlanırsa bildirimi iptal et
         if (newStatus && _notificationService != null) {
           await _notificationService!.cancelNotification(taskId);
         }
 
-        // Update in DB
+        // Veritabanında güncelle
         await _databaseService!.updateTask(dbId, {
           'completed': newStatus ? 1 : 0,
         });
@@ -309,11 +303,11 @@ class HomeViewModel extends ChangeNotifier {
       if (_toggleTaskCompletionUseCase != null) {
         await _toggleTaskCompletionUseCase!.execute(taskId);
       } else {
-        // Fallback implementation
+        // Yedek işlem
         final task = _tasks.firstWhere((t) => t.id == taskId);
         task.isCompleted = !task.isCompleted;
       }
-      await loadTasks(); // Refresh tasks
+      await loadTasks(); // Görev listesini güncelle
     } catch (e) {
       _error = 'Görev durumu değiştirilirken bir hata oluştu: $e';
       notifyListeners();

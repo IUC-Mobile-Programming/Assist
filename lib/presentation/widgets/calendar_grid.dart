@@ -337,13 +337,7 @@ class _CalendarGridState extends State<CalendarGrid> {
         onTap: dayDate != null ? () => _showTasksForDate(context, dayDate) : null,
         onLongPress: dayDate != null
             ? () {
-                // Long press logic handled by GestureDetector in parent or here?
-                // Parent used GestureDetector.onLongPress in older code, but we are inside _buildDayCell now.
-                // The original code passed standard gestures. But we want tap.
-                _showAddEventOverlay(dayDate!, Offset.zero); // Position might be tricky here without details
-                // Actually original code used _startLongPressTimer with position.
-                // Simpler for now: just tap shows tasks. Long press for add remains if possible,
-                // but for now let's focus on the tap requirement.
+                _showAddEventOverlay(dayDate!, Offset.zero);
               }
             : null,
         borderRadius: BorderRadius.circular(12),

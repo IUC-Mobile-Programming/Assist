@@ -252,18 +252,16 @@ class SettingsPage extends StatelessWidget {
                 try {
                   await viewModel.deleteAllData();
                   if (context.mounted) {
-                    Navigator.of(context).pop(); // Close dialog
+                    Navigator.of(context).pop();
                     
-                    // Reload HomeViewModel before popping back to home page
+                    // Ana sayfaya dönmeden ViewModel'i güncelle
                     try {
                       final homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
                       await homeViewModel.loadTasks();
-                    } catch (_) {
-                      // HomeViewModel might not be in scope, continue anyway
-                    }
+                    } catch (_) {}
                     
                     if (context.mounted) {
-                      Navigator.of(context).pop(); // Close settings page and return to home
+                      Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -277,7 +275,7 @@ class SettingsPage extends StatelessWidget {
                   }
                 } catch (e) {
                   if (context.mounted) {
-                    Navigator.of(context).pop(); // Close dialog on error
+                    Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(

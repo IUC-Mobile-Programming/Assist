@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Assist/presentation/viewmodels/settings_viewmodel.dart';
+import 'package:Assist/services/localization_service.dart';
 
 class HelpAboutPage extends StatelessWidget {
   const HelpAboutPage({super.key});
@@ -8,6 +9,7 @@ class HelpAboutPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<SettingsViewModel>(context, listen: false);
+    final loc = Provider.of<LocalizationService>(context);
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
@@ -16,17 +18,17 @@ class HelpAboutPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildBackButton(() => viewModel.setSection(SettingsSection.main), context),
+          _buildBackButton(() => viewModel.setSection(SettingsSection.main), context, loc),
           const SizedBox(height: 20),
-          _buildHelpSection(theme, isDarkMode),
+          _buildHelpSection(theme, isDarkMode, loc),
           const SizedBox(height: 20),
-          _buildAboutSection(theme, isDarkMode),
+          _buildAboutSection(theme, isDarkMode, loc),
         ],
       ),
     );
   }
 
-  Widget _buildBackButton(VoidCallback onBack, BuildContext context) {
+  Widget _buildBackButton(VoidCallback onBack, BuildContext context, LocalizationService loc) {
     return Row(
       children: [
         IconButton(
@@ -35,7 +37,7 @@ class HelpAboutPage extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          'Yardım & Hakkında',
+          loc.helpAbout,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -44,7 +46,7 @@ class HelpAboutPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHelpSection(ThemeData theme, bool isDarkMode) {
+  Widget _buildHelpSection(ThemeData theme, bool isDarkMode, LocalizationService loc) {
     return Card(
       color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
       elevation: 4,
@@ -62,7 +64,7 @@ class HelpAboutPage extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'Yardım',
+                  loc.help,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -71,20 +73,20 @@ class HelpAboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Sıkça Sorulan Sorular',
+              loc.frequentlyAskedQuestions,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 10),
             _buildFAQItem(
-              question: 'Görev nasıl eklerim?',
-              answer: 'Ana ekrandaki "+" butonuna tıklayarak veya ASSIST AI\'a sesli komut vererek görev ekleyebilirsiniz.',
+              question: loc.faqHowToAddTask,
+              answer: loc.faqHowToAddTaskAnswer,
               theme: theme,
             ),
             _buildFAQItem(
-              question: 'Bildirimler nasıl ayarlanır?',
-              answer: 'Ayarlar > Bildirimler bölümünden bildirim tercihlerinizi düzenleyebilirsiniz.',
+              question: loc.faqHowToSetupNotifications,
+              answer: loc.faqHowToSetupNotificationsAnswer,
               theme: theme,
             ),
           ],
@@ -93,7 +95,7 @@ class HelpAboutPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAboutSection(ThemeData theme, bool isDarkMode) {
+  Widget _buildAboutSection(ThemeData theme, bool isDarkMode, LocalizationService loc) {
     return Card(
       color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
       elevation: 4,
@@ -104,14 +106,14 @@ class HelpAboutPage extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.info_outline,
                   size: 30,
-                  color: const Color(0xFF4CAF50),
+                  color: Color(0xFF4CAF50),
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'Hakkında',
+                  loc.about,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -119,26 +121,26 @@ class HelpAboutPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            _buildAppInfo(theme, isDarkMode),
+            _buildAppInfo(theme, isDarkMode, loc),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAppInfo(ThemeData theme, bool isDarkMode) {
+  Widget _buildAppInfo(ThemeData theme, bool isDarkMode, LocalizationService loc) {
     return Center(
       child: Column(
         children: [
           Text(
-            'ASSIST AI',
+            loc.appTitle,
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 5),
           Text(
-            'Version 1.0.0',
+            loc.appVersion,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.textTheme.bodySmall?.color,
             ),
@@ -155,7 +157,7 @@ class HelpAboutPage extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Yapay zeka destekli kişisel asistan uygulaması',
+            loc.aiPoweredAssistant,
             style: theme.textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),

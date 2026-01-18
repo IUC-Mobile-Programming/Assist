@@ -127,10 +127,10 @@ Future<void> setupDependencies() async {
   final locator = ServiceLocator();
   if (locator._isInitialized) return;
   
-  // Initialize async services
+  // Async servisleri başlat
   await Future.wait([
     locator.notificationService.init(),
-    locator.databaseService.database.then((_) {}), // Pre-warm database
+    locator.databaseService.database.then((_) {}),
   ]);
   
   locator._isInitialized = true;

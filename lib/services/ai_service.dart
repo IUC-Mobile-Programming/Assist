@@ -6,8 +6,8 @@ import 'package:Assist/data/models/ai_recommendation.dart';
 import 'package:Assist/services/localization_service.dart';
 import 'package:http/http.dart' as http;
 
-/// Abstraction for AI-related operations (recommendations, analysis).
-/// Kept backward-compatible with existing callers in your project.
+/// Yapay zeka servisi: öneriler ve metin tamamlama
+/// Ollama modeli ile entegre çalışıyor
 abstract class AIService {
   Future<List<AIRecommendation>> fetchRecommendations(List<Task> context);
 
@@ -16,8 +16,7 @@ abstract class AIService {
     String? category,
   });
 
-  /// Legacy name kept for compatibility.
-  /// Returns a very short continuation for typing (plain text).
+  /// Yazılan metni tamamlayan fonksiyon
   Future<String?> generateAssistantCompletion({
     required String input,
     List<Task>? context,
@@ -36,7 +35,7 @@ class OllamaAIService implements AIService {
   final String? _systemPromptOverride;
 
   OllamaAIService({
-    // Android emulator note: you may need http://10.0.2.2:11434
+    // Android emülatöründe host makinesine erişmek için 10.0.2.2 kullan
     this.baseUrl = 'http://localhost:11434',
     this.model = 'neural-chat:latest',
     Duration? timeout,
