@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Assist/presentation/viewmodels/settings_viewmodel.dart';
+import 'package:Assist/presentation/viewmodels/home_viewmodel.dart';
 import 'package:Assist/presentation/pages/settings/help_about_page.dart';
 import 'package:Assist/services/localization_service.dart';
 import 'package:Assist/core/app_theme.dart';
@@ -252,20 +253,31 @@ class SettingsPage extends StatelessWidget {
                   await viewModel.deleteAllData();
                   if (context.mounted) {
                     Navigator.of(context).pop(); // Close dialog
-                    Navigator.of(context).pop(); // Close settings page
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          localizationService.deleteDataSuccess,
-                          style: const TextStyle(color: Colors.white),
+                    
+                    // Reload HomeViewModel before popping back to home page
+                    try {
+                      final homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
+                      await homeViewModel.loadTasks();
+                    } catch (_) {
+                      // HomeViewModel might not be in scope, continue anyway
+                    }
+                    
+                    if (context.mounted) {
+                      Navigator.of(context).pop(); // Close settings page and return to home
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            localizationService.deleteDataSuccess,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          backgroundColor: AppTheme.successColor,
                         ),
-                        backgroundColor: AppTheme.successColor,
-                      ),
-                    );
+                      );
+                    }
                   }
                 } catch (e) {
                   if (context.mounted) {
-                    Navigator.of(context).pop();
+                    Navigator.of(context).pop(); // Close dialog on error
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(

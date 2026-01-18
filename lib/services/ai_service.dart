@@ -456,6 +456,62 @@ $taskList
       return guessCategory(combined);
     }
 
+    // First, try parsing labeled format (Başlık:/Title: on separate lines)
+    final labeledResult = <(String, String, String)>[];
+    final _seenLabeled = <String>{};
+    String? currentTitle;
+    String? currentDesc;
+    String? currentCat;
+    
+    for (final line in lines) {
+      final trimmed = line.trim();
+      
+      // Check for title line
+      if (RegExp(r'^[•\-\d\.\)\s]*(Başlık|Title|baslik):\s*(.+)', caseSensitive: false).hasMatch(trimmed)) {
+        // Save previous recommendation if complete
+        if (currentTitle != null && currentDesc != null && currentCat != null) {
+          final key = normalizeKey(currentTitle);
+          if (!_seenLabeled.contains(key)) {
+            labeledResult.add((currentTitle, _ensurePeriod(currentDesc), currentCat));
+            _seenLabeled.add(key);
+          }
+        }
+        // Extract new title
+        final match = RegExp(r'^[•\-\d\.\)\s]*(Başlık|Title|baslik):\s*(.+)', caseSensitive: false).firstMatch(trimmed);
+        currentTitle = match?.group(2)?.trim();
+        currentDesc = null;
+        currentCat = null;
+      }
+      // Check for description line
+      else if (RegExp(r'^\s*(Açıklama|Description|aciklama):\s*(.+)', caseSensitive: false).hasMatch(trimmed)) {
+        final match = RegExp(r'^\s*(Açıklama|Description|aciklama):\s*(.+)', caseSensitive: false).firstMatch(trimmed);
+        currentDesc = match?.group(2)?.trim();
+      }
+      // Check for category line
+      else if (RegExp(r'^\s*(Kategori|Category):\s*(.+)', caseSensitive: false).hasMatch(trimmed)) {
+        final match = RegExp(r'^\s*(Kategori|Category):\s*(.+)', caseSensitive: false).firstMatch(trimmed);
+        currentCat = match?.group(2)?.trim();
+        // Normalize category
+        if (currentCat != null) {
+          currentCat = normalizeCategory(currentCat, currentTitle ?? '', currentDesc ?? '');
+        }
+      }
+    }
+    
+    // Save last recommendation
+    if (currentTitle != null && currentDesc != null && currentCat != null && labeledResult.length < 3) {
+      final key = normalizeKey(currentTitle);
+      if (!_seenLabeled.contains(key)) {
+        labeledResult.add((currentTitle, _ensurePeriod(currentDesc), currentCat));
+      }
+    }
+    
+    // If we parsed labeled format successfully, return it
+    if (labeledResult.isNotEmpty) {
+      return labeledResult;
+    }
+
+    // Fallback: try pipe-delimited format
     final result = <(String, String, String)>[];
     final _seenTitles = <String>{};
     final _seenDescriptions = <String>{};
